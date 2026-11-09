@@ -333,10 +333,18 @@ body {
   font-size: 10px; font-weight: 700; line-height: 1;
   color: var(--vscode-badge-foreground); background: var(--vscode-badge-background);
 }
-.tree-children { padding: 0; }
-.tree-children .row.tab, .tree-children .row.pane { margin: 0; padding-left: 12px; padding-right: 12px; }
-.tree-children .row.pane::before { display: none; }
-.tree-children .row.tab + .row.tab, .tree-children .row.pane + .row.pane { border-top: 1px solid var(--section-border); }
+.tree-node, .tree-children, .space-block, .space-tabs { display: contents; }
+.list > .group {
+  position: relative; display: flex; height: 30px; margin: 10px 0 0; padding: 0 8px 0 12px;
+  border-top: 1px solid var(--section-border); background: var(--bg); z-index: 1;
+}
+.list > .group:first-child { margin-top: 0; }
+.list > .group .space-avatar { width: 18px; height: 18px; flex: none; }
+.list > .group + .card.agent, .list > .group + .row, .list > .group + .old-agent { margin-top: 0; }
+.list > .card.agent { margin-left: 0; margin-right: 0; }
+.list > .row.tab, .list > .row.pane, .list > .old-agent { margin-left: 0; margin-right: 0; padding-left: 12px; padding-right: 12px; }
+.list > .row.tab .icon, .list > .row.pane .icon { margin-left: 0; }
+.list > .group:hover .hover-only { display: inline-flex; }
 .chips { display: inline-flex; gap: 4px; flex: none; }
 .chip {
   display: inline-flex; align-items: center; gap: 3px; height: 18px; padding: 0 6px; border-radius: 9px;
