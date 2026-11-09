@@ -14,6 +14,10 @@
 </p>
 
 <p align="center">
+  <img src="docs/mascots-banner.png" width="900" alt="Herdr agent mascots">
+</p>
+
+<p align="center">
   <img src="docs/agents.png" width="300" alt="Agents panel">
   &nbsp;&nbsp;
   <img src="docs/spaces.png" width="300" alt="Spaces panel">
