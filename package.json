@@ -2,7 +2,7 @@
   "name": "herdr-vsx",
   "displayName": "Herdr for VS Code",
   "description": "Your herdr spaces and coding agents in the VS Code sidebar: see who needs you, jump in, start new ones.",
-  "version": "0.9.3",
+  "version": "0.10.0",
   "publisher": "mxprshn",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -80,6 +80,11 @@
           "type": "boolean",
           "default": true,
           "description": "Play Herdr's sounds when an agent needs you or finishes."
+        },
+        "herdr.mobilePort": {
+          "type": "number",
+          "default": 7681,
+          "description": "Port of the phone web app (Herdr: Open on Phone), on your local network."
         }
       }
     },
@@ -222,6 +227,12 @@
         "command": "herdr.renameSession",
         "title": "Rename Session…",
         "category": "Herdr"
+      },
+      {
+        "command": "herdr.openOnPhone",
+        "title": "Open on Phone",
+        "category": "Herdr",
+        "icon": "$(device-mobile)"
       }
     ],
     "keybindings": [
@@ -244,6 +255,11 @@
     ],
     "menus": {
       "view/title": [
+        {
+          "command": "herdr.openOnPhone",
+          "when": "view == herdr.agents",
+          "group": "navigation@0"
+        },
         {
           "command": "herdr.goToAgent",
           "when": "view == herdr.agents",
@@ -404,9 +420,10 @@
     "package": "vsce package --no-dependencies"
   },
   "devDependencies": {
-    "@vscode/codicons": "^0.0.36",
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.90.0",
-    "typescript": "^5.4.0"
+    "@vscode/codicons": "^0.0.36",
+    "typescript": "^5.4.0",
+    "qrcode-generator": "^2.0.4"
   }
 }

@@ -14,6 +14,10 @@ import { FileTabs } from './filetabs';
 import { paste } from './paste';
 import { lastMessage, Notifier } from './notify';
 import { findExplytSession, recentExplytSessions } from './duplicate';
+import { findClaudeSession } from './transcript';
+import { MobileServer } from './mobile';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const qrcode: (type: number, level: 'L' | 'M' | 'Q' | 'H') => any = require('../media/vendor/qrcode.js');
 import * as fs from 'fs';
 
 const HERDR_HOME = path.join(os.homedir(), '.config', 'herdr-app');
@@ -136,6 +140,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(status);
 
   let pending: NodeJS.Timeout | undefined;
+  let lastModel: ReturnType<typeof buildModel> | undefined;
   const refresh = () => {
     if (pending) return;
     // Coalesce bursts of events (a working agent reports often).
@@ -144,6 +149,8 @@ export function activate(context: vscode.ExtensionContext) {
       const model = buildModel(state, programs, { active, current: currentSpace, lastProgram: context.globalState.get<string>('lastProgram'), sort, error, installed: installedAgents, repo: (f) => repos.get(f) });
       agentsView.update(model);
       spacesView.update(model);
+      lastModel = model;
+      mobile?.modelChanged();
       const all = model.agents.flatMap((a) => [a, ...a.kids]);
       const waiting = all.filter((a) => a.word === 'blocked').length;
       const done = all.filter((a) => a.word === 'done').length;
@@ -343,6 +350,83 @@ export function activate(context: vscode.ExtensionContext) {
    * A copy of an agent as a new tab next to it: the harness forks its session, so the copy
    * has the whole conversation and goes its own way. Explyt only, for now.
    */
+  // ------------------------------------------------------------- phone
+
+  /** The session file an agent runs, if its harness keeps one we can read; only sure matches. */
+  async function sessionOf(address: string): Promise<{ file: string; kind: 'explyt' | 'claude' } | undefined> {
+    const t = state?.terminals.get(address);
+    if (!t) return undefined;
+    const key = programOf(programs, t).key;
+    const cwd = t.foreground?.cwd ?? t.cwd ?? '';
+    if (key === 'explyt') {
+      const s = findExplytSession(cwd, {
+        topic: state!.renamed.get(address) ?? (t.status as any)?.msg,
+        statusMs: Number(t.status_ms) || undefined,
+        working: t.status?.state === 'working',
+        startedMs: await processStart(t.foreground?.pid),
+      });
+      return s?.sure ? { file: s.file, kind: 'explyt' } : undefined;
+    }
+    if (key === 'claude' || key === 'claude-code') {
+      const file = findClaudeSession(cwd, await processStart(t.foreground?.pid));
+      return file ? { file, kind: 'claude' } : undefined;
+    }
+    return undefined;
+  }
+
+  let mobile: MobileServer | undefined;
+  let qrPanel: vscode.WebviewPanel | undefined;
+
+  async function openOnPhone() {
+    mobile ??= new MobileServer({
+      model: () => lastModel,
+      sessionOf,
+      screen: async (address) => String((await core?.call('terminal.read', { terminal: address, lines: 60 }, 4000))?.text ?? ''),
+      send: async (address, text) => { await core?.call('terminal.send', { terminal: address, text, force: true }); },
+      keys: async (address, keys) => { if (keys.length) await core?.call('terminal.keys', { terminal: address, keys }); },
+    }, context.asAbsolutePath('media'));
+    if (!mobile.running) {
+      try {
+        await mobile.start(config().get<number>('mobilePort', 7681));
+      } catch (e: any) {
+        void vscode.window.showErrorMessage(`Cannot start the phone server: ${e.message}`);
+        return;
+      }
+    }
+    const url = mobile.url;
+    if (!url) { void vscode.window.showErrorMessage('No local network address: connect to Wi‑Fi and try again.'); return; }
+    const q = qrcode(0, 'M');
+    q.addData(url);
+    q.make();
+    const svg = q.createSvgTag({ cellSize: 8, margin: 3, scalable: true });
+    if (!qrPanel) {
+      qrPanel = vscode.window.createWebviewPanel('herdr.phone', 'herdr on your phone', vscode.ViewColumn.Active, { enableScripts: true });
+      qrPanel.iconPath = vscode.Uri.file(context.asAbsolutePath('media/icon.png'));
+      qrPanel.onDidDispose(() => { qrPanel = undefined; });
+      qrPanel.webview.onDidReceiveMessage((m) => {
+        if (m === 'stop') { mobile?.stop(); qrPanel?.dispose(); void vscode.window.showInformationMessage('Phone access stopped.'); }
+        if (m === 'rotate') { mobile?.rotate(); void openOnPhone(); }
+        if (m === 'copy' && mobile?.url) void vscode.env.clipboard.writeText(mobile.url);
+      });
+    }
+    qrPanel.webview.html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+      body{font-family:var(--vscode-font-family);color:var(--vscode-foreground);display:flex;flex-direction:column;align-items:center;padding:32px;gap:14px;text-align:center}
+      .qr{background:#fff;padding:14px;border-radius:14px;width:300px;height:300px;box-sizing:border-box}.qr svg{width:100%;height:100%}
+      h2{margin:0}p{margin:0;color:var(--vscode-descriptionForeground);max-width:420px;line-height:1.5}
+      code{font-size:12px;word-break:break-all}.row{display:flex;gap:8px}
+      button{font:inherit;padding:6px 12px;border:none;border-radius:2px;cursor:pointer;color:var(--vscode-button-secondaryForeground);background:var(--vscode-button-secondaryBackground)}
+      button.danger{color:var(--vscode-button-foreground);background:var(--vscode-button-background)}
+    </style></head><body>
+      <h2>Scan with your phone</h2>
+      <div class="qr">${svg}</div>
+      <p>Same Wi‑Fi as this Mac. The link carries a secret key: anyone with it can read and answer your agents, so don't share it.</p>
+      <code>${url.replace(/#k=.*/, '#k=…')}</code>
+      <div class="row"><button onclick="post('copy')">Copy link</button><button onclick="post('rotate')">New key</button><button class="danger" onclick="post('stop')">Stop</button></div>
+      <script>const vs=acquireVsCodeApi();function post(m){vs.postMessage(m)}</script>
+    </body></html>`;
+    qrPanel.reveal();
+  }
+
   async function duplicateAgent(address: string): Promise<void> {
     if (!state) return;
     const s = state;
@@ -745,7 +829,8 @@ export function activate(context: vscode.ExtensionContext) {
       else void vscode.window.showInformationMessage('No agent needs you.');
     }),
     vscode.workspace.onDidChangeConfiguration((e) => { if (e.affectsConfiguration('herdr.hcPath')) void connect(); }),
-    { dispose: () => { clearTimeout(retry); core?.dispose(); } },
+    vscode.commands.registerCommand('herdr.openOnPhone', openOnPhone),
+    { dispose: () => { clearTimeout(retry); core?.dispose(); mobile?.stop(); } },
   );
 
   void installed(programs.startable().map((s) => s.run[0])).then((found) => { installedAgents = found; refresh(); });
