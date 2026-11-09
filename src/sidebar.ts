@@ -15,7 +15,9 @@ export type Message =
   | { type: 'gitSpace'; space: string; op: 'fetch' | 'pull' }
   | { type: 'newNote'; space: string }
   | { type: 'closeSpace'; space: string }
-  | { type: 'pin'; address: string; pinned: boolean };
+  | { type: 'pin'; address: string; pinned: boolean }
+  | { type: 'duplicate'; address: string }
+  | { type: 'rename'; address: string; name: string };
 
 export class Sidebar implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;

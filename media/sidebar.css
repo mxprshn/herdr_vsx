@@ -233,6 +233,11 @@ body {
 .card.agent.active .ava-badge { background: var(--active); border-color: transparent; }
 .card.agent .line1, .card.agent .line2 { line-height: 20px; }
 .card.agent .line1 .title { flex: 1; }
+.title-edit {
+  flex: 1; min-width: 0; height: 20px; padding: 0 4px; margin: -1px 0 -1px -5px; box-sizing: border-box;
+  font: inherit; font-weight: 600; color: var(--vscode-input-foreground); background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-focusBorder); border-radius: 3px; outline: none;
+}
 .card.agent .line1 .spacer { display: none; }
 .card.agent .line1 .time { color: var(--dim); font-size: 0.85em; }
 .card.agent.tone-blocked .line1 .time, .card.agent.tone-done .line1 .time { color: var(--tone); font-weight: 600; }

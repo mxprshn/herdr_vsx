@@ -26,7 +26,7 @@ export interface TerminalRecord {
   turn?: number;
   labels?: Record<string, string>;
   status?: { app?: string; state?: string } | null;
-  foreground?: { name?: string; argv?: string[]; cwd?: string } | null;
+  foreground?: { name?: string; argv?: string[]; cwd?: string; pid?: number } | null;
   parent?: string | null;
   [key: string]: unknown;
 }

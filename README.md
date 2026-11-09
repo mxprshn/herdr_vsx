@@ -26,8 +26,10 @@
 - 🔴 **Needs you**, 🟢 **Done**, 🔵 **Working**, idle — each with its own color, sorted by what needs attention first.
 - The repo's avatar with the agent's icon in the corner, its topic, space and how long it's been in that state.
 - Sub-agents (`hc run` children and reported child records) nested under their parent.
-- A badge on the activity bar, a status bar summary, a notification and herdr's sound when an agent needs you or finishes while you look elsewhere (a macOS banner when VS Code is in the background).
+- A badge on the activity bar, a status bar summary, a notification and herdr's sound when an agent needs you or finishes while you look elsewhere.
+- When VS Code is in the background, a macOS banner with what the agent just said (its question, if it asked one) and the repo's avatar; clicking it opens that agent.
 - Pin agents to the top, close their tab, filter, group by priority or by space.
+- **Explyt agents:** duplicate one (forks its session, so the copy has the whole conversation), or double-click its title to rename the session.
 
 **Spaces** — your herdr spaces as an Explorer-like tree: spaces with their tabs (terminals, agents, files) inside.
 
@@ -49,7 +51,7 @@ Everything goes through herdr-core, so the extension and the herdr app see the s
 2. Download `herdr-vsx-<version>.vsix` from [Releases](https://github.com/mxprshn/herdr_vsx/releases/latest).
 3. Install it:
    ```sh
-   code --install-extension herdr-vsx-0.7.0.vsix
+   code --install-extension herdr-vsx-0.9.3.vsix
    ```
    or in VS Code: **Extensions → ⋯ → Install from VSIX…**
 4. Open the **herdr** view in the activity bar.
@@ -73,7 +75,7 @@ Command palette: **Herdr: New Agent**, **New Space**, **Go to Agent…**, **Reco
 | `herdr.hcPath` | `hc` | Path to `hc`; also looks in `~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin`. |
 | `herdr.openIn` | `editor` | Open terminals as editor tabs or in the terminal panel. |
 | `herdr.notifications` | `true` | Notify when an agent needs you or finishes. |
-| `herdr.systemNotifications` | `true` | macOS banner when VS Code isn't focused (uses `terminal-notifier` if installed). |
+| `herdr.systemNotifications` | `true` | macOS banner when VS Code isn't focused. Install `terminal-notifier` (`brew install terminal-notifier`) for the avatar, the message and click-to-open. |
 | `herdr.sounds` | `true` | Play herdr's sounds. |
 | `herdr.explorerFollowsSpace` | `true` | Show the current space's project as an Explorer root. |
 | `herdr.filesFollowEditors` | `true` | Mirror open files into their space (needs a herdr editor mod named `my-editor`). |

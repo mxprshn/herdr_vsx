@@ -2,7 +2,7 @@
   "name": "herdr-vsx",
   "displayName": "Herdr for VS Code",
   "description": "Your herdr spaces and coding agents in the VS Code sidebar: see who needs you, jump in, start new ones.",
-  "version": "0.7.0",
+  "version": "0.9.3",
   "publisher": "mxprshn",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -212,6 +212,16 @@
         "command": "herdr.paste",
         "title": "Paste (Text or Image)",
         "category": "Herdr"
+      },
+      {
+        "command": "herdr.duplicate",
+        "title": "Duplicate Agent",
+        "category": "Herdr"
+      },
+      {
+        "command": "herdr.renameSession",
+        "title": "Rename Session…",
+        "category": "Herdr"
       }
     ],
     "keybindings": [
@@ -267,6 +277,11 @@
           "group": "1_open@1"
         },
         {
+          "command": "herdr.duplicate",
+          "when": "(webviewSection == agent || webviewSection == tab) && program == explyt",
+          "group": "1_open@2"
+        },
+        {
           "command": "herdr.pin",
           "when": "webviewSection == agent && !pinned",
           "group": "2_agent@1"
@@ -295,6 +310,11 @@
           "command": "herdr.gitPull",
           "when": "webviewSection == space && git",
           "group": "2_git@2"
+        },
+        {
+          "command": "herdr.renameSession",
+          "when": "(webviewSection == agent || webviewSection == tab) && program == explyt",
+          "group": "3_edit@0"
         },
         {
           "command": "herdr.renameTab",
@@ -365,6 +385,14 @@
         },
         {
           "command": "herdr.kill",
+          "when": "false"
+        },
+        {
+          "command": "herdr.duplicate",
+          "when": "false"
+        },
+        {
+          "command": "herdr.renameSession",
           "when": "false"
         }
       ]

@@ -38,7 +38,8 @@ export class Repos {
     if (inside.code !== 0) return;
     const origin = await run('git', ['remote', 'get-url', 'origin'], folder);
     const owner = origin.code === 0 ? githubOwner(origin.out) : undefined;
-    this.info.set(folder, { git: true, avatar: owner ? await this.avatar(owner) : undefined });
+    const avatar = owner ? await this.avatar(owner) : undefined;
+    this.info.set(folder, { git: true, avatar, avatarFile: avatar ? path.join(this.avatarDir, `${owner}.png`) : undefined });
     this.changed();
   }
 

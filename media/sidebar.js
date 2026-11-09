@@ -128,9 +128,16 @@
       role: 'button',
       tabindex: 0,
       title: [a.name, a.where, a.detail, a.cwd, a.address].filter(Boolean).join('\n'),
-      onclick: () => send({ type: 'open', address: a.address }),
+      // On a renameable title a click waits out a double-click: opening the terminal at once
+      // redraws the list, and the second click would land on a new element.
+      onclick: (e) => {
+        const go = () => send({ type: 'open', address: a.address });
+        if (!e.target.closest?.('.title.editable')) return go();
+        clearTimeout(openTimer);
+        openTimer = setTimeout(go, 260);
+      },
       onkeydown: (e) => { if (e.key === 'Enter') send({ type: 'open', address: a.address }); },
-      context: { webviewSection: 'agent', address: a.address, pinned: a.pinned, tab: a.tab },
+      context: { webviewSection: 'agent', address: a.address, pinned: a.pinned, tab: a.tab, program: a.program },
     },
       // The repo's avatar (else the space's letter), the agent's icon in its corner.
       h('span.ava', {},
@@ -138,10 +145,13 @@
         h('span.ava-badge', { title: a.name }, icon(a.icon, a.name))),
       h('div.lines', {},
         h('div.line1', {},
-          h('span.title', {}, title),
+          a.program === 'explyt'
+            ? h('span.title.editable', { title: 'Double-click to rename the session', ondblclick: (e) => { e.stopPropagation(); clearTimeout(openTimer); editTitle(e.currentTarget, a); } }, title)
+            : h('span.title', {}, title),
           a.pinned ? h('span.pin-mark', { title: 'Pinned' }, codicon('pinned')) : null,
           h('span.spacer'),
           h('span.hover-only', {},
+            a.program === 'explyt' ? action('copy', 'Duplicate (fork the session)', () => send({ type: 'duplicate', address: a.address })) : null,
             action(a.pinned ? 'pinned' : 'pin', a.pinned ? 'Unpin' : 'Pin to the top', () => send({ type: 'pin', address: a.address, pinned: !a.pinned })),
             a.tab ? action('close', 'Close this tab', closeTab) : null),
           a.since ? h('span.time.hover-hide', {}, duration(model.now - a.since)) : null),
@@ -230,7 +240,7 @@
       title: [tab.name, lead?.cwd ?? tab.file, lead?.address].filter(Boolean).join('\n'),
       onclick: go,
       onkeydown: (e) => { if (e.key === 'Enter') go(); },
-      context: { webviewSection: 'tab', space: space.id, tab: tab.id, address: lead?.address },
+      context: { webviewSection: 'tab', space: space.id, tab: tab.id, address: lead?.address, program: lead?.word ? lead.program : undefined },
     },
       tab.file && !lead ? h('span.icon.file', {}, codicon('file')) : icon(lead?.icon, lead?.name ?? tab.name),
       h('span.label', {},
@@ -303,6 +313,44 @@
     return out;
   }
 
+  // ---------------------------------------------------------------- inline rename
+
+  /** While a name is being typed, the list doesn't redraw under it. */
+  let editing = false;
+  let openTimer;
+
+  /** Turns a title into an input in place: Enter renames the session, Esc or leaving cancels. */
+  function editTitle(span, a) {
+    if (editing) return;
+    editing = true;
+    const before = a.session || span.textContent;
+    const input = h('input.title-edit', { type: 'text', value: before, 'aria-label': 'Session name' });
+    input.value = before;
+    let done = false;
+    const finish = (save) => {
+      if (done) return;
+      done = true;
+      editing = false;
+      const name = input.value.trim().replace(/\s+/g, ' ');
+      if (save && name && name !== before) {
+        span.textContent = name;
+        send({ type: 'rename', address: a.address, name });
+      }
+      input.replaceWith(span);
+      render();
+    };
+    for (const ev of ['click', 'mousedown', 'dblclick']) input.addEventListener(ev, (e) => e.stopPropagation());
+    input.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') finish(true);
+      if (e.key === 'Escape') finish(false);
+    });
+    input.addEventListener('blur', () => finish(false));
+    span.replaceWith(input);
+    input.focus();
+    input.select();
+  }
+
   // ---------------------------------------------------------------- + menu
 
   /** A small menu under a + : what to start, the last used first, one click. Number keys pick. */
@@ -342,7 +390,7 @@
   let search;
 
   function render() {
-    if (!model) return;
+    if (!model || editing) return;
     const focused = document.activeElement === search;
     const top = root.scrollTop;
     root.replaceChildren();

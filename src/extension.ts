@@ -12,6 +12,8 @@ import { Repos } from './repos';
 import { ExplorerFollower } from './explorer';
 import { FileTabs } from './filetabs';
 import { paste } from './paste';
+import { lastMessage, Notifier } from './notify';
+import { findExplytSession, recentExplytSessions } from './duplicate';
 import * as fs from 'fs';
 
 const HERDR_HOME = path.join(os.homedir(), '.config', 'herdr-app');
@@ -49,26 +51,6 @@ function installed(commands: string[]): Promise<Set<string>> {
   });
 }
 
-/**
- * A macOS banner, for when VS Code isn't the active window: terminal-notifier when
- * installed (a click brings VS Code forward), else AppleScript.
- */
-function banner(title: string, body: string) {
-  if (process.platform !== 'darwin') return;
-  execFile('sh', ['-lc', 'command -v terminal-notifier'], (e, out) => {
-    const tn = String(out ?? '').trim();
-    if (!e && tn) {
-      execFile(tn, ['-title', title, '-message', body, '-activate', 'com.microsoft.VSCode', '-group', title], (err) => {
-        if (err) osascript(title, body);
-      });
-    } else osascript(title, body);
-  });
-}
-
-function osascript(title: string, body: string) {
-  execFile('osascript', ['-e', 'on run argv', '-e', 'display notification (item 2 of argv) with title (item 1 of argv)', '-e', 'end run', title, body], () => {});
-}
-
 function playSound(file: string) {
   const player = process.platform === 'darwin' ? ['afplay', [file]] : process.platform === 'linux' ? ['paplay', [file]] : undefined;
   if (!player) return;
@@ -88,6 +70,15 @@ export function activate(context: vscode.ExtensionContext) {
   let sort: 'priority' | 'space' = context.globalState.get('sort') ?? 'priority';
   let installedAgents: Set<string> | undefined;
   const repos = new Repos(path.join(HERDR_HOME, 'my-icons', 'github'), () => refresh());
+  const notifier = new Notifier(path.join(context.globalStorageUri.fsPath, 'notify'));
+  const bannerGroup = (address: string) => `herdr-vsx:${address}`;
+  // A banner's click opens `<editor>://mxprshn.herdr-vsx/open?t=<address>` and lands here.
+  context.subscriptions.push(vscode.window.registerUriHandler({
+    handleUri(uri) {
+      const address = new URLSearchParams(uri.query).get('t');
+      if (uri.path === '/open' && address) openTerminal(address);
+    },
+  }));
   const explorer = new ExplorerFollower();
   const fileTabs = new FileTabs(() => state, (f) => explorer.project(f), () => currentSpace,
     vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? 'vscode');
@@ -128,6 +119,8 @@ export function activate(context: vscode.ExtensionContext) {
       case 'gitSpace': return void git(m.space, m.op);
       case 'newNote': return void newNote(m.space);
       case 'closeSpace': return void closeSpace(m.space);
+      case 'duplicate': return void duplicateAgent(m.address);
+      case 'rename': return void renameSession(m.address, m.name);
       case 'pin': return void state?.label(m.address, { 'herdr.pinned': m.pinned ? '1' : '' });
     }
   };
@@ -221,18 +214,41 @@ export function activate(context: vscode.ExtensionContext) {
     if (blocked(after) && !blocked(before)) kind = 'blocked';
     else if (busy(before) && after && !busy(after)) kind = 'done';
     if (!kind) return;
-    const name = programOf(programs, t).name;
-    const place = s.placeOf(address);
-    const where = place ? ` in ${s.spaceName(place.space)}` : '';
     if (config().get<boolean>('sounds', true)) playSound(context.asAbsolutePath(`media/sounds/${kind === 'blocked' ? 'request' : 'done'}.mp3`));
-    if (config().get<boolean>('notifications', true)) {
-      const text = kind === 'blocked' ? `${name}${where} needs you` : `${name}${where} finished`;
-      if (!vscode.window.state.focused && config().get<boolean>('systemNotifications', true)) {
-        banner(`${name} ${kind === 'blocked' ? 'is waiting for you' : 'finished'}`, [place && s.spaceName(place.space), place?.tab.name].filter(Boolean).join(' › ') || t.title || 'Herdr');
-      }
-      const show = kind === 'blocked' ? vscode.window.showWarningMessage : vscode.window.showInformationMessage;
-      void show(text, 'Open').then((pick) => { if (pick) openTerminal(address); });
+    if (config().get<boolean>('notifications', true)) void announce(s, address, kind);
+  }
+
+  /** A notification with what the agent just said; a macOS banner too when VS Code is in the background. */
+  async function announce(s: State, address: string, kind: 'blocked' | 'done') {
+    const t = s.terminals.get(address);
+    if (!t) return;
+    const p = programOf(programs, t);
+    const place = s.placeOf(address);
+    const spaceName = place ? s.spaceName(place.space) : '';
+    const topic = (t.status as any)?.msg || (place?.tab.name !== p.name ? place?.tab.name : '') || '';
+    let said = '';
+    try {
+      const screen = await s.core.call('terminal.read', { terminal: address, lines: 0 }, 3000);
+      said = lastMessage(String(screen?.text ?? ''), kind === 'blocked');
+    } catch { /* the screen is a nicety */ }
+    const head = `${p.name}${spaceName ? ` · ${spaceName}` : ''}`;
+    const verb = kind === 'blocked' ? 'needs you' : 'finished';
+    const message = said || topic || (kind === 'blocked' ? 'Waiting for your answer' : 'Done');
+
+    if (!vscode.window.state.focused && config().get<boolean>('systemNotifications', true)) {
+      const folder = place ? s.spaceFolder(place.space) : t.cwd ?? '';
+      void notifier.show({
+        group: bannerGroup(address),
+        title: `${kind === 'blocked' ? '🔴' : '✅'} ${p.name} ${verb}`,
+        subtitle: [spaceName, topic && topic !== said ? topic : ''].filter(Boolean).join(' › '),
+        message,
+        image: repos.get(folder)?.avatarFile,
+        icon: p.iconFile,
+        url: `${vscode.env.uriScheme}://${context.extension.id}/open?t=${encodeURIComponent(address)}`,
+      });
     }
+    const show = kind === 'blocked' ? vscode.window.showWarningMessage : vscode.window.showInformationMessage;
+    void show(`${head} ${verb}: ${message}`, 'Open').then((pick) => { if (pick) openTerminal(address); });
   }
 
   // ------------------------------------------------------------- terminals
@@ -241,6 +257,7 @@ export function activate(context: vscode.ExtensionContext) {
     const c = core;
     if (!c || !state) return;
     void state.markSeen(address);
+    void notifier.remove(bannerGroup(address));
     selectSpace(state.placeOf(address)?.space.id);
     const existing = open.get(address);
     if (existing) { existing.show(); return; }
@@ -320,6 +337,108 @@ export function activate(context: vscode.ExtensionContext) {
       keep: true,
     });
     return r.address;
+  }
+
+  /**
+   * A copy of an agent as a new tab next to it: the harness forks its session, so the copy
+   * has the whole conversation and goes its own way. Explyt only, for now.
+   */
+  async function duplicateAgent(address: string): Promise<void> {
+    if (!state) return;
+    const s = state;
+    const t = s.terminals.get(address);
+    const place = s.placeOf(address);
+    const p = programOf(programs, t);
+    if (!t || !place) return;
+    if (p.key !== 'explyt') {
+      void vscode.window.showInformationMessage(`Duplicating works for Explyt agents for now, not ${p.name}.`);
+      return;
+    }
+    const cwd = t.foreground?.cwd ?? t.cwd ?? s.spaceFolder(place.space);
+    const session = findExplytSession(cwd, {
+      topic: (t.status as any)?.msg,
+      statusMs: Number(t.status_ms) || undefined,
+      working: t.status?.state === 'working',
+      startedMs: await processStart(t.foreground?.pid),
+    });
+    if (!session) {
+      void vscode.window.showErrorMessage(`No Explyt session found for ${lastSegment(cwd)}.`);
+      return;
+    }
+    let file = session.file;
+    // Not matched for sure: forking a neighbour's conversation would be worse than asking.
+    if (!session.sure) {
+      const ago = (ms: number) => { const m = Math.round((Date.now() - ms) / 60000); return m < 60 ? `${m}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`; };
+      const pick = await vscode.window.showQuickPick(
+        recentExplytSessions(cwd).map((x) => ({ label: x.name || '(unnamed session)', description: ago(x.mtime), detail: path.basename(x.file), file: x.file })),
+        { title: `Duplicate ${place.tab.name || p.name}: which session is it?`, placeHolder: `Couldn't tell which session this agent runs — pick it (newest first)` },
+      );
+      if (!pick) return;
+      file = pick.file;
+    }
+    try {
+      const tabId = freshId('tb');
+      const address2 = await run(cwd, place.space.id, tabId, { argv: inShell(['explyt', '--fork', file]), name: p.name });
+      const name = place.tab.name ? `${place.tab.name} (copy)` : '';
+      await s.editDoc((doc) => {
+        if (JSON.stringify(doc).includes(`"terminal":"${address2}"`)) return false;
+        const sp = doc.spaces.find((x: any) => x.id === place.space.id);
+        if (!sp) return false;
+        const at = (sp.tabs ?? []).findIndex((x: any) => x.id === place.tab.id);
+        sp.tabs.splice(at < 0 ? sp.tabs.length : at + 1, 0, tabNode(tabId, name, address2));
+        return true;
+      });
+      openTerminal(address2);
+    } catch (e: any) {
+      void vscode.window.showErrorMessage(`Cannot duplicate: ${e.message}`);
+    }
+  }
+
+  /** When a process started (`ps` speaks local time). */
+  function processStart(pid: number | undefined): Promise<number | undefined> {
+    if (!pid) return Promise.resolve(undefined);
+    return new Promise((resolve) => execFile('ps', ['-o', 'lstart=', '-p', String(pid)], (e, out) => {
+      const ms = Date.parse(String(out ?? '').trim().replace(/\s+/g, ' '));
+      resolve(e || Number.isNaN(ms) ? undefined : ms);
+    }));
+  }
+
+  /**
+   * Renames an Explyt agent's session with its own `/name`: the agent writes the name to the
+   * session and reports it to herdr as its topic. Typed only while it waits for input.
+   */
+  /** `typed`: the name from the panel's inline editor; else asks. */
+  async function renameSession(address: string, typed?: string): Promise<void> {
+    if (!state || !core) return;
+    const s = state;
+    const t = s.terminals.get(address);
+    if (!t) return;
+    if (programOf(programs, t).key !== 'explyt') {
+      void vscode.window.showInformationMessage('Renaming sessions works for Explyt agents for now.');
+      return;
+    }
+    const name = (typed ?? await vscode.window.showInputBox({
+      title: 'Rename session',
+      value: (t.status as any)?.msg ?? '',
+      prompt: 'The agent gets /name <name>: its session and its topic in herdr change.',
+      validateInput: (v) => (v.trim() ? undefined : 'Enter a name'),
+    }))?.trim().replace(/\s+/g, ' ');
+    if (!name || name === (t.status as any)?.msg) { refresh(); return; }
+    const now = s.terminals.get(address)?.status?.state;
+    if (now !== 'done' && now !== 'idle') {
+      void vscode.window.showWarningMessage(`The agent is ${now ?? 'busy'}: rename it once it waits for you, so /name doesn't mix into what it's doing.`);
+      refresh();
+      return;
+    }
+    try {
+      await core.call('terminal.send', { terminal: address, text: `/name ${name}`, if: now });
+      // Explyt reports its topic to herdr with its next status: show the new name now.
+      s.renamed.set(address, name);
+      refresh();
+    } catch (e: any) {
+      void vscode.window.showErrorMessage(`Cannot rename: ${e.message}`);
+      refresh();
+    }
   }
 
   /** `program`: a key from the panel's + menu (no picker); else asks. */
@@ -581,6 +700,8 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('herdr.newSpace', () => newSpace()),
     vscode.commands.registerCommand('herdr.newTab', (c?: Ctx) => newTab(c?.space)),
     vscode.commands.registerCommand('herdr.newAgent', () => newTab()),
+    vscode.commands.registerCommand('herdr.duplicate', (c?: Ctx) => c?.address && duplicateAgent(c.address)),
+    vscode.commands.registerCommand('herdr.renameSession', (c?: Ctx) => c?.address && renameSession(c.address)),
     vscode.commands.registerCommand('herdr.renameSpace', (c?: Ctx) => c?.space && rename('space', c.space)),
     vscode.commands.registerCommand('herdr.renameTab', (c?: Ctx) => c?.tab && rename('tab', c.tab)),
     vscode.commands.registerCommand('herdr.closeTab', (c?: Ctx) => c?.tab && closeTab(c.tab)),

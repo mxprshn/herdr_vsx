@@ -10,6 +10,8 @@ export interface TerminalVM {
   address: string;
   name: string;
   icon?: IconRef;
+  /** The program table's key (`claude`, `explyt`, `shell`…). */
+  program: string;
   word?: AgentWord;
   title: string;
   cwd: string;
@@ -21,13 +23,15 @@ export interface TerminalVM {
 export interface TabVM { id: string; name: string; detail: string; word?: AgentWord; lead?: TerminalVM; panes: TerminalVM[]; file?: string; active: boolean }
 export interface SpaceVM { id: string; name: string; folder: string; word?: AgentWord; attention: number; tabs: TabVM[]; avatar?: string; git?: boolean; current?: boolean }
 
-export interface RepoInfo { git: boolean; avatar?: string }
+export interface RepoInfo { git: boolean; avatar?: string; avatarFile?: string }
 
 export interface AgentVM extends TerminalVM {
   since: number;
   where: string;
   detail: string;
   pinned: boolean;
+  /** The session's name the agent reports (Explyt: `/name`), editable inline. */
+  session?: string;
   /** What the agent says it is doing (sub-agents: OSC 7501 `msg`). */
   msg: string;
   /** A child record reported by its owner (no terminal of its own): opening it opens the owner. */
@@ -157,6 +161,7 @@ export function buildModel(
       address,
       name: p.name,
       icon: iconRef(p),
+      program: p.key,
       word: state.word(t),
       title: telling(t?.title, p, cwd),
       cwd: tilde(cwd),
@@ -205,11 +210,14 @@ export function buildModel(
     const vm = terminal(t.address);
     const place = state.placeOf(t.address);
     const tabName = place?.tab.name && place.tab.name !== vm.name && !/^\d+$/.test(place.tab.name) ? place.tab.name : '';
+    // The session's name, when the agent reports one (Explyt's /name), comes before the tab's.
+    const session = state.renamed.get(t.address) ?? (t.status as any)?.msg ?? '';
     return {
       ...vm,
       since: Number(t.status_ms ?? 0),
       where: place ? state.spaceName(place.space) : lastSegment(vm.cwd) || vm.cwd,
-      detail: tabName || vm.title,
+      detail: session || tabName || vm.title,
+      session,
       pinned: !!t.labels?.['herdr.pinned'],
       msg: '',
       space: place?.space.id,

@@ -30,6 +30,8 @@ export function tabNode(id: string, name: string, address: string) {
 export class State extends EventEmitter {
   terminals = new Map<string, TerminalRecord>();
   spaces: Space[] = [];
+  /** Names just given with /name, shown until the agent's own title or topic says so. */
+  renamed = new Map<string, string>();
   private seq = 0;
   private pending = '';
 
@@ -123,11 +125,15 @@ export class State extends EventEmitter {
         const before = t.status?.state;
         set(['status', 'records', 'reported']);
         t.status_ms = data.status_ms ?? Date.now();
+        if (this.renamed.get(address) === (t.status as any)?.msg) this.renamed.delete(address);
         if (before !== t.status?.state) this.emit('status', address, before, t.status?.state);
         return true;
       }
       case 'turn': set(['turn']); return true;
-      case 'title': set(['title']); return true;
+      case 'title':
+        set(['title']);
+        if (this.renamed.has(address) && String(t.title ?? '').includes(this.renamed.get(address)!)) this.renamed.delete(address);
+        return true;
       case 'labels': set(['labels']); return true;
       case 'keep': set(['keep']); return true;
       case 'size': set(['cols', 'rows']); return true;
