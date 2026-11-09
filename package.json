@@ -2,7 +2,7 @@
   "name": "herdr-vsx",
   "displayName": "Herdr for VS Code",
   "description": "Your herdr spaces and coding agents in the VS Code sidebar: see who needs you, jump in, start new ones.",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "publisher": "mxprshn",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -108,11 +108,6 @@
           "id": "herdr.agents",
           "name": "Agents",
           "type": "webview"
-        },
-        {
-          "id": "herdr.spaces",
-          "name": "Spaces",
-          "type": "webview"
         }
       ]
     },
@@ -197,12 +192,6 @@
         "icon": "$(list-tree)"
       },
       {
-        "command": "herdr.sortPriority",
-        "title": "Sort by Priority",
-        "category": "Herdr",
-        "icon": "$(list-ordered)"
-      },
-      {
         "command": "herdr.goToAgent",
         "title": "Go to Agent…",
         "category": "Herdr",
@@ -276,19 +265,14 @@
           "group": "navigation@2"
         },
         {
-          "command": "herdr.sortPriority",
-          "when": "view == herdr.agents && herdr.sort == space",
-          "group": "navigation@2"
-        },
-        {
           "command": "herdr.newSpace",
-          "when": "view == herdr.spaces",
-          "group": "navigation@1"
+          "when": "view == herdr.agents",
+          "group": "navigation@3"
         },
         {
           "command": "herdr.reconnect",
-          "when": "view == herdr.spaces",
-          "group": "navigation@2"
+          "when": "view == herdr.agents",
+          "group": "navigation@4"
         }
       ],
       "webview/context": [

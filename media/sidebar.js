@@ -118,12 +118,18 @@
   function agentRow(a, full) {
     const word = a.shown ?? a.word;
     const title = a.detail || a.name;
+    const old = a.since && model.now - a.since > 86400000;
     const meta = [full || !a.space ? a.where : null, a.name !== title ? a.name : null, a.cwd && a.cwd !== a.where ? a.cwd : null].filter(Boolean);
     const hasKids = a.kids.length > 0;
     const open = !folded.has(`kids:${a.address}`);
     const subs = hasKids && open ? subTree(a) : [];
     const closeTab = () => send({ type: 'closeAgentTab', tab: a.tab, title: a.tabName, space: a.where, lastTab: a.lastTab });
     const top = flatKids(a).reduce((m, k) => ((RANK[k.word] ?? 0) > (RANK[m] ?? 0) ? k.word : m), null);
+    if (old && !hasKids) return [h(`div.old-agent${a.active ? '.active' : ''}`, {
+      role: 'button', title: [title, a.where, a.name, a.address].filter(Boolean).join(' · '),
+      onclick: () => send({ type: 'open', address: a.address }),
+      context: { webviewSection: 'agent', address: a.address, pinned: a.pinned, tab: a.tab, program: a.program },
+    }, icon(a.icon, a.name), h('span.label', {}, h('span.name', {}, title), h('span.detail', {}, ` · ${a.where}`)), h('span.time', {}, duration(model.now - a.since)))];
     const row = h(`div.agent-head${word === 'idle' && !a.active ? '.quiet' : ''}`, {
       role: 'button',
       tabindex: 0,
@@ -189,8 +195,8 @@
 
   function renderAgents() {
     let list = model.agents.filter((a) => matches(a.name, a.where, a.detail, a.address));
-    const byPriority = model.sort === 'priority';
-    list = [...list].sort((x, y) => (y.pinned - x.pinned) || (byPriority ? rankOf(y) - rankOf(x) : 0) || (y.since - x.since) || x.address.localeCompare(y.address));
+    const byPriority = false;
+    list = [...list].sort((x, y) => (y.pinned - x.pinned) || (y.since - x.since) || x.address.localeCompare(y.address));
     const out = [];
     if (!model.agents.length) {
       out.push(h('div.empty', {},
@@ -227,6 +233,12 @@
       if (!folded.has(`ag:${g.id}`)) for (const a of g.members) out.push(...agentRow(a, byPriority || a.pinned));
     }
     if (!list.length) out.push(h('div.empty.dim', {}, 'Nothing matches.'));
+    const resources = model.spaces.flatMap(spaceBlock);
+    const loose = model.unplaced.filter((t) => matches(t.name, t.title, t.cwd, t.address));
+    if (resources.length) out.push(h('div.resources-label', {}, 'Spaces'));
+    out.push(...resources);
+    if (loose.length) out.push(groupHeader('loose', 'Not in a space', loose.length, null), ...(!folded.has('loose') ? loose.map((t) => h(`div.row.tab${t.active ? '.active' : ''}`, { role: 'button', onclick: () => send({ type: 'open', address: t.address }), title: [t.cwd, t.address].join('\\n') }, icon(t.icon, t.name), h('span.label', {}, h('span.name', {}, t.title || t.name), h('span.detail', {}, ` · ${t.address}`)), status(t.word, true))) : []));
+    out.push(h('button.new-space', { onclick: () => send({ type: 'newSpace' }) }, codicon('new-folder'), ' New space…'));
     return out;
   }
 

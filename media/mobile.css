@@ -82,7 +82,8 @@ button { font: inherit; color: inherit; border: none; background: none; padding:
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .ava { position: relative; width: 48px; height: 48px; flex: none; }
-.ava > img, .ava > .letter { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+.ava > img, .ava > .letter { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; object-position: center; display: block; }
+.ava > img:first-child { overflow: hidden; }
 .ava > .letter { display: grid; place-items: center; font-weight: 700; font-size: 20px; color: #fff; background: #7a7f8c; }
 .ava .badge {
   position: absolute; right: -2px; bottom: -2px; width: 20px; height: 20px; border-radius: 50%;
@@ -91,7 +92,12 @@ button { font: inherit; color: inherit; border: none; background: none; padding:
 .ava .badge img { width: 14px; height: 14px; }
 .ava .badge.repo { overflow: hidden; }
 .ava .badge.repo img, .ava .badge.repo .letter { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-.ava .badge.repo .letter { display: grid; place-items: center; font-size: 10px; font-weight: 700; color: #fff; background: #7a7f8c; }
+.ava .badge.repo .letter {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%; box-sizing: border-box; padding: 0;
+  font-size: 10px; font-weight: 700; line-height: 1; text-align: center;
+  color: #fff; background: #7a7f8c;
+}
 .ava.small { width: 34px; height: 34px; }
 .ava.small .badge { width: 15px; height: 15px; }
 .ava.small .badge img { width: 10px; height: 10px; }

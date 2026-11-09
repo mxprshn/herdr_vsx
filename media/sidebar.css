@@ -146,6 +146,19 @@ body {
 .row.pane { padding-left: 38px; }
 .space-tabs .row.pane::before { content: ''; position: absolute; left: 29px; top: 0; bottom: 0; border-left: 1px solid var(--guide); }
 
+/* Resources live below chats in the merged Agents view. */
+.resources-label { margin: 14px 0 3px; padding: 0 8px; color: var(--dim); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; }
+.old-agent {
+  display: flex; align-items: center; gap: 7px; height: 24px; margin: 0 -8px; padding: 0 12px;
+  color: var(--dim); cursor: pointer; border-bottom: 1px solid var(--section-border);
+}
+.old-agent:hover { color: var(--vscode-foreground); background: var(--hover); }
+.old-agent.active { color: var(--vscode-foreground); background: var(--active); }
+.old-agent > .icon { width: 16px; height: 16px; opacity: .75; }
+.old-agent .label { font-size: .9em; }
+.old-agent .name { color: var(--vscode-foreground); }
+.old-agent .time { font-size: .8em; color: var(--dim); }
+
 /* ------------------------------------------------------------ cards */
 
 /*
@@ -227,7 +240,8 @@ body {
 /* Consecutive chats in the same state: a hairline between them so they don't merge. */
 .card.agent[class*=tone-] + .card.agent[class*=tone-]::before { border-top-color: color-mix(in srgb, var(--tone) 35%, transparent); }
 .card.agent .ava, .card.agent .ava-img { width: 40px; height: 40px; }
-.card.agent .ava-img { border-radius: 50%; }
+.card.agent .ava.mascot { overflow: visible; }
+.card.agent .ava-img { display: block; border-radius: 50%; object-fit: cover; object-position: center; }
 .card.agent .ava-img.letter { font-size: 17px; }
 .card.agent .ava-badge { right: -3px; bottom: -3px; border-radius: 50%; background: var(--bg); border-color: var(--bg); }
 .card.agent.active .ava-badge { background: var(--active); border-color: transparent; }
@@ -278,7 +292,9 @@ body {
 /* The repo as the corner badge, under a mascot. */
 .ava-badge.repo img, .ava-badge.repo .letter { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; display: block; }
 .ava-badge.repo .letter {
-  display: grid; place-items: center; font-size: 9px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%; box-sizing: border-box; padding: 0;
+  font-size: 9px; font-weight: 700; line-height: 1; text-align: center;
   color: var(--vscode-badge-foreground); background: var(--vscode-badge-background);
 }
 .card.agent .ava.mascot .ava-badge { width: 18px; height: 18px; padding: 0; overflow: hidden; }
@@ -300,6 +316,7 @@ body {
 /* Spaces: an Explorer-like tree. The space is a folder row; its tabs sit one level in. */
 .tree-node { position: relative; }
 .tree-node + .tree-node { margin-top: 2px; }
+.resources-label + .tree-node { margin-top: 0; }
 .tree-space {
   display: flex; align-items: center; gap: 6px; min-width: 0;
   height: 26px; margin: 0 -8px; padding: 0 8px 0 4px;

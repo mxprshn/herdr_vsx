@@ -132,10 +132,8 @@ export function activate(context: vscode.ExtensionContext) {
     }
   };
   const agentsView = new Sidebar(context.extensionUri, 'agents', onMessage);
-  const spacesView = new Sidebar(context.extensionUri, 'spaces', onMessage);
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider('herdr.agents', agentsView, { webviewOptions: { retainContextWhenHidden: true } }),
-    vscode.window.registerWebviewViewProvider('herdr.spaces', spacesView, { webviewOptions: { retainContextWhenHidden: true } }),
   );
 
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 50);
@@ -151,7 +149,6 @@ export function activate(context: vscode.ExtensionContext) {
       pending = undefined;
       const model = buildModel(state, programs, { active, current: currentSpace, lastProgram: context.globalState.get<string>('lastProgram'), mascot: config().get<boolean>('mascots', true) ? (k) => mascots.uri(k) : undefined, sort, error, installed: installedAgents, repo: (f) => repos.get(f) });
       agentsView.update(model);
-      spacesView.update(model);
       lastModel = model;
       mobile?.modelChanged();
       const all = model.agents.flatMap((a) => [a, ...a.kids]);
@@ -162,8 +159,6 @@ export function activate(context: vscode.ExtensionContext) {
       agentsView.badge = attention ? { value: attention, tooltip: `${waiting} need you, ${done} done` } : undefined;
       agentsView.description = !state ? 'offline'
         : [waiting && `● ${waiting} need you`, done && `✓ ${done} done`, working && `◌ ${working} working`].filter(Boolean).join('  ') || `${all.length} idle`;
-      const shown = model.spaces.find((sp) => sp.current);
-      spacesView.description = !state ? undefined : shown ? `▸ ${shown.name}` : `${model.spaces.length}`;
       if (!state) { status.hide(); return; }
       const parts = [
         waiting ? `$(bell-dot) ${waiting}` : '',
@@ -804,7 +799,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (ok === 'End') await killAll([c.address]);
     }),
     vscode.commands.registerCommand('herdr.sortSpace', () => setSort('space')),
-    vscode.commands.registerCommand('herdr.sortPriority', () => setSort('priority')),
+    vscode.commands.registerCommand('herdr.sortPriority', () => setSort('space')),
     vscode.commands.registerCommand('herdr.focusAgents', () => vscode.commands.executeCommand('herdr.agents.focus')),
     vscode.commands.registerCommand('herdr.goToAgent', async () => {
       if (!state) return;
