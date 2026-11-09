@@ -388,8 +388,9 @@
   /** A small menu under a + : what to start, the last used first, one click. Number keys pick. */
   let launch;
   function closeLaunch() { launch?.remove(); launch = undefined; }
-  function openLaunch(anchor, pick) {
+  function openLaunch(anchorOrEvent, pick) {
     closeLaunch();
+    const anchor = anchorOrEvent instanceof Element ? anchorOrEvent : anchorOrEvent.currentTarget;
     const programs = [{ key: 'terminal', name: 'Terminal' }, ...model.startable];
     const last = programs.findIndex((p) => p.key === model.lastProgram);
     if (last > 0) programs.unshift(...programs.splice(last, 1));
@@ -408,7 +409,7 @@
     );
     document.body.append(launch);
     const r = anchor.getBoundingClientRect();
-    const w = launch.offsetWidth, hgt = launch.offsetHeight;
+    const w = launch.offsetWidth || 200, hgt = launch.offsetHeight || 200;
     launch.style.left = `${Math.max(4, Math.min(r.right - w, window.innerWidth - w - 4))}px`;
     launch.style.top = `${r.bottom + 4 + hgt > window.innerHeight ? Math.max(4, r.top - hgt - 4) : r.bottom + 4}px`;
     launch.focus();
