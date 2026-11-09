@@ -115,11 +115,11 @@
     const title = agent.detail || agent.name;
     const old = agent.since && model.now - agent.since > 86400000;
     const closeTab = () => send({ type: 'closeAgentTab', tab: agent.tab, title: agent.tabName, space: agent.where, lastTab: agent.lastTab });
-    if (old && !agent.kids.length) return h(`div.item compact-item${agent.active ? ' active' : ''}`, {
+    if (old && !agent.kids.length) return [h(`div.item compact-item${agent.active ? ' active' : ''}`, {
       role: 'button', title: [title, agent.where, agent.name, agent.address].filter(Boolean).join(' · '),
       onclick: () => send({ type: 'open', address: agent.address }),
       context: { webviewSection: 'agent', address: agent.address, pinned: agent.pinned, tab: agent.tab, program: agent.program },
-    }, h('span.item-icon', {}, icon(agent.icon, agent.name)), h('span.label', {}, h('span.name', {}, title), h('span.detail', {}, ` · ${agent.where}`)), h('span.time', {}, duration(model.now - agent.since)), status(word, true));
+    }, h('span.item-icon', {}, icon(agent.icon, agent.name)), h('span.label', {}, h('span.name', {}, title), h('span.detail', {}, ` · ${agent.where}`)), h('span.time', {}, duration(model.now - agent.since)), status(word, true))];
 
     const open = !folded.has(`kids:${agent.address}`);
     const titleNode = agent.program === 'explyt'
