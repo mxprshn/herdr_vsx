@@ -42,7 +42,7 @@ body { margin: 0; color: var(--vscode-sideBar-foreground, var(--vscode-foregroun
 .compact-item { color: var(--dim); }
 .compact-item .name { color: var(--vscode-foreground); }
 .compact-item .time { margin-left: auto; font-size: .85em; }
-.agent-item { min-height: 64px; gap: 10px; padding-top: 8px; padding-bottom: 8px; }
+.agent-item { height: 64px; min-height: 64px; box-sizing: border-box; gap: 10px; padding-top: 4px; padding-bottom: 4px; }
 .agent-item.tone-blocked { background: color-mix(in srgb, var(--blocked) 12%, transparent); }
 .agent-item.tone-working { background: color-mix(in srgb, var(--working) 7%, transparent); }
 .agent-item.tone-done { background: color-mix(in srgb, var(--done) 8%, transparent); }
