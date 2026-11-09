@@ -99,7 +99,7 @@ export class MobileServer {
     if (!m) return { connected: false, agents: [] };
     const flat = (a: AgentVM) => ({
       address: a.address, name: a.name, title: a.detail || a.name, where: a.where, word: a.shown ?? a.word,
-      since: a.since, icon: a.icon?.key, avatar: a.avatar, pinned: a.pinned,
+      since: a.since, icon: a.icon?.key, avatar: a.avatar, mascot: a.program, hasMascot: !!a.mascot, pinned: a.pinned,
       kids: a.kids.filter((k) => k.word === 'working' || k.word === 'blocked').length,
     });
     return {
@@ -118,6 +118,9 @@ export class MobileServer {
     if (p === '/mobile.js') return this.file(res, 'mobile.js', 'text/javascript; charset=utf-8');
     if (p === '/mobile.css') return this.file(res, 'mobile.css', 'text/css; charset=utf-8');
     if (p === '/icon.png') return this.file(res, 'icon.png', 'image/png');
+    // Mascots by URL, so the phone caches them instead of getting them in every update.
+    const mascot = /^\/mascots\/([a-z0-9-]+)\.webp$/.exec(p);
+    if (mascot) return this.file(res, path.join('mascots', `${mascot[1]}.webp`), 'image/webp', 'public, max-age=86400');
     if (p === '/manifest.json') {
       res.writeHead(200, { 'content-type': 'application/manifest+json' });
       return res.end(JSON.stringify({ name: 'herdr', short_name: 'herdr', display: 'standalone', background_color: '#111', theme_color: '#111', icons: [{ src: '/icon.png', sizes: '256x256', type: 'image/png' }] }));
@@ -167,7 +170,7 @@ export class MobileServer {
       const s = await this.host.sessionOf(address);
       if (s) { t = new Transcript(s.file, s.kind); this.transcripts.set(address, t); }
     }
-    const header = agent && { title: agent.detail || agent.name, name: agent.name, where: agent.where, word: agent.shown ?? agent.word, icon: agent.icon?.key, avatar: agent.avatar };
+    const header = agent && { title: agent.detail || agent.name, name: agent.name, where: agent.where, word: agent.shown ?? agent.word, icon: agent.icon?.key, avatar: agent.avatar, mascot: agent.program, hasMascot: !!agent.mascot };
     if (t) {
       t.refresh();
       return { kind: 'bubbles', header, bubbles: full ? t.bubbles : t.bubbles.slice(-3) };
@@ -197,11 +200,11 @@ export class MobileServer {
     }
   }
 
-  private file(res: http.ServerResponse, name: string, type: string) {
+  private file(res: http.ServerResponse, name: string, type: string, cache = 'no-cache') {
     const file = path.join(this.media, name);
     fs.readFile(file, (e, buf) => {
       if (e) { res.writeHead(404); return res.end(); }
-      res.writeHead(200, { 'content-type': type, 'cache-control': 'no-cache' });
+      res.writeHead(200, { 'content-type': type, 'cache-control': cache });
       res.end(buf);
     });
   }

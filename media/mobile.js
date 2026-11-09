@@ -45,9 +45,15 @@
   }
   const clock = (ms) => (ms ? new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
 
+  /** The repo with the agent's icon in its corner; with mascots on, the mascot with the repo in its corner. */
   function avatar(a, size) {
     const box = h(`div.ava${size ? '.' + size : ''}`);
-    box.append(a.avatar ? h('img', { src: a.avatar, alt: '' }) : h('span.letter', {}, (a.where || '?')[0].toUpperCase()));
+    const repo = () => (a.avatar ? h('img', { src: a.avatar, alt: '' }) : h('span.letter', {}, (a.where || '?')[0].toUpperCase()));
+    if (a.hasMascot) {
+      box.append(h('img', { src: `/mascots/${a.mascot}.webp`, alt: '' }), h('span.badge.repo', {}, repo()));
+      return box;
+    }
+    box.append(repo());
     const icon = a.icon && list.icons[a.icon];
     if (icon) box.append(h('span.badge', {}, h('img', { src: icon, alt: '' })));
     return box;

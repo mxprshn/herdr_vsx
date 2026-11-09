@@ -2,7 +2,7 @@
   "name": "herdr-vsx",
   "displayName": "Herdr for VS Code",
   "description": "Your herdr spaces and coding agents in the VS Code sidebar: see who needs you, jump in, start new ones.",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "publisher": "mxprshn",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -85,6 +85,11 @@
           "type": "number",
           "default": 7681,
           "description": "Port of the phone web app (Herdr: Open on Phone), on your local network."
+        },
+        "herdr.mascots": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show each agent harness's anime mascot as the agent's avatar (the repo's avatar goes in its corner). Off: the repo's avatar with the agent's icon in the corner."
         }
       }
     },

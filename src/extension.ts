@@ -16,6 +16,7 @@ import { lastMessage, Notifier } from './notify';
 import { findExplytSession, recentExplytSessions } from './duplicate';
 import { findClaudeSession } from './transcript';
 import { MobileServer } from './mobile';
+import { Mascots } from './mascots';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const qrcode: (type: number, level: 'L' | 'M' | 'Q' | 'H') => any = require('../media/vendor/qrcode.js');
 import * as fs from 'fs';
@@ -74,6 +75,8 @@ export function activate(context: vscode.ExtensionContext) {
   let sort: 'priority' | 'space' = context.globalState.get('sort') ?? 'priority';
   let installedAgents: Set<string> | undefined;
   const repos = new Repos(path.join(HERDR_HOME, 'my-icons', 'github'), () => refresh());
+  const mascots = new Mascots(context.asAbsolutePath('media/mascots'));
+  context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((e) => { if (e.affectsConfiguration('herdr.mascots')) refresh(); }));
   const notifier = new Notifier(path.join(context.globalStorageUri.fsPath, 'notify'));
   const bannerGroup = (address: string) => `herdr-vsx:${address}`;
   // A banner's click opens `<editor>://mxprshn.herdr-vsx/open?t=<address>` and lands here.
@@ -146,7 +149,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Coalesce bursts of events (a working agent reports often).
     pending = setTimeout(() => {
       pending = undefined;
-      const model = buildModel(state, programs, { active, current: currentSpace, lastProgram: context.globalState.get<string>('lastProgram'), sort, error, installed: installedAgents, repo: (f) => repos.get(f) });
+      const model = buildModel(state, programs, { active, current: currentSpace, lastProgram: context.globalState.get<string>('lastProgram'), mascot: config().get<boolean>('mascots', true) ? (k) => mascots.uri(k) : undefined, sort, error, installed: installedAgents, repo: (f) => repos.get(f) });
       agentsView.update(model);
       spacesView.update(model);
       lastModel = model;
@@ -249,7 +252,7 @@ export function activate(context: vscode.ExtensionContext) {
         title: `${kind === 'blocked' ? '🔴' : '✅'} ${p.name} ${verb}`,
         subtitle: [spaceName, topic && topic !== said ? topic : ''].filter(Boolean).join(' › '),
         message,
-        image: repos.get(folder)?.avatarFile,
+        image: (config().get<boolean>('mascots', true) && mascots.png(p.key)) || repos.get(folder)?.avatarFile,
         icon: p.iconFile,
         url: `${vscode.env.uriScheme}://${context.extension.id}/open?t=${encodeURIComponent(address)}`,
       });

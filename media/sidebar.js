@@ -139,10 +139,16 @@
       onkeydown: (e) => { if (e.key === 'Enter') send({ type: 'open', address: a.address }); },
       context: { webviewSection: 'agent', address: a.address, pinned: a.pinned, tab: a.tab, program: a.program },
     },
-      // The repo's avatar (else the space's letter), the agent's icon in its corner.
-      h('span.ava', {},
-        a.avatar ? h('img.ava-img', { src: a.avatar, alt: '' }) : h('span.ava-img.letter', {}, (a.where[0] ?? '?').toUpperCase()),
-        h('span.ava-badge', { title: a.name }, icon(a.icon, a.name))),
+      // The repo's avatar (else the space's letter), the agent's icon in its corner;
+      // with mascots on, the harness's mascot, the repo in its corner.
+      a.mascot
+        ? h('span.ava.mascot', {},
+          h('img.ava-img', { src: a.mascot, alt: '', title: a.name }),
+          h('span.ava-badge.repo', { title: a.where },
+            a.avatar ? h('img', { src: a.avatar, alt: '' }) : h('span.letter', {}, (a.where[0] ?? '?').toUpperCase())))
+        : h('span.ava', {},
+          a.avatar ? h('img.ava-img', { src: a.avatar, alt: '' }) : h('span.ava-img.letter', {}, (a.where[0] ?? '?').toUpperCase()),
+          h('span.ava-badge', { title: a.name }, icon(a.icon, a.name))),
       h('div.lines', {},
         h('div.line1', {},
           a.program === 'explyt'

@@ -275,6 +275,14 @@ body {
 .ava-badge .icon, .ava-badge .icon.big { width: 13px; height: 13px; font-size: 8px; border-radius: 3px; }
 .card[class*=tone-] .ava-badge { background: color-mix(in srgb, var(--tone) var(--wash), var(--vscode-editorWidget-background, var(--bg))); border-color: transparent; }
 
+/* The repo as the corner badge, under a mascot. */
+.ava-badge.repo img, .ava-badge.repo .letter { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; display: block; }
+.ava-badge.repo .letter {
+  display: grid; place-items: center; font-size: 9px; font-weight: 700;
+  color: var(--vscode-badge-foreground); background: var(--vscode-badge-background);
+}
+.card.agent .ava.mascot .ava-badge { width: 18px; height: 18px; padding: 0; overflow: hidden; }
+
 /* Sub-agents: a toggle bar and their rows, inside the card. */
 .kids-bar {
   display: flex; align-items: center; gap: 4px; width: 100%;

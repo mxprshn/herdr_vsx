@@ -89,6 +89,9 @@ button { font: inherit; color: inherit; border: none; background: none; padding:
   display: grid; place-items: center; background: var(--bg); box-shadow: 0 0 0 2px var(--bg);
 }
 .ava .badge img { width: 14px; height: 14px; }
+.ava .badge.repo { overflow: hidden; }
+.ava .badge.repo img, .ava .badge.repo .letter { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.ava .badge.repo .letter { display: grid; place-items: center; font-size: 10px; font-weight: 700; color: #fff; background: #7a7f8c; }
 .ava.small { width: 34px; height: 34px; }
 .ava.small .badge { width: 15px; height: 15px; }
 .ava.small .badge img { width: 10px; height: 10px; }

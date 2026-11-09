@@ -51,7 +51,7 @@ Everything goes through herdr-core, so the extension and the herdr app see the s
 2. Download `herdr-vsx-<version>.vsix` from [Releases](https://github.com/mxprshn/herdr_vsx/releases/latest).
 3. Install it:
    ```sh
-   code --install-extension herdr-vsx-0.9.3.vsix
+   code --install-extension herdr-vsx-0.11.0.vsix
    ```
    or in VS Code: **Extensions → ⋯ → Install from VSIX…**
 4. Open the **herdr** view in the activity bar.
@@ -78,6 +78,7 @@ Command palette: **Herdr: New Agent**, **New Space**, **Go to Agent…**, **Reco
 | `herdr.systemNotifications` | `true` | macOS banner when VS Code isn't focused. Install `terminal-notifier` (`brew install terminal-notifier`) for the avatar, the message and click-to-open. |
 | `herdr.sounds` | `true` | Play herdr's sounds. |
 | `herdr.explorerFollowsSpace` | `true` | Show the current space's project as an Explorer root. |
+| `herdr.mascots` | `true` | Each harness's anime mascot as the agent's avatar, the repo in its corner. |
 | `herdr.filesFollowEditors` | `true` | Mirror open files into their space (needs a herdr editor mod named `my-editor`). |
 
 ## Build from source

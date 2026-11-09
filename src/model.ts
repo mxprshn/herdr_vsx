@@ -43,6 +43,8 @@ export interface AgentVM extends TerminalVM {
   lastTab?: boolean;
   /** Its repo owner's avatar (the space's, else its folder's). */
   avatar?: string;
+  /** The harness's mascot (`herdr.mascots`): then it is the big picture and the repo goes in the corner. */
+  mascot?: string;
   /** The status the row shows: its own, raised by a working or blocked sub-agent. */
   shown?: AgentWord;
   kids: AgentVM[];
@@ -139,7 +141,7 @@ export function programOf(programs: Programs, t: TerminalRecord | undefined): Pr
 export function buildModel(
   state: State | undefined,
   programs: Programs,
-  opts: { active?: string; current?: string; lastProgram?: string; sort: 'priority' | 'space'; error?: string; installed?: Set<string>; repo?: (folder: string) => RepoInfo | undefined },
+  opts: { active?: string; current?: string; lastProgram?: string; mascot?: (program: string) => string | undefined; sort: 'priority' | 'space'; error?: string; installed?: Set<string>; repo?: (folder: string) => RepoInfo | undefined },
 ): Model {
   const icons: Model['icons'] = {};
   const iconRef = (p: Program): IconRef | undefined => {
@@ -225,6 +227,7 @@ export function buildModel(
       tabName: place ? place.tab.name || vm.name : undefined,
       lastTab: place ? place.space.tabs.length === 1 : undefined,
       avatar: opts.repo?.(place ? state.spaceFolder(place.space) : t.foreground?.cwd ?? t.cwd ?? '')?.avatar,
+      mascot: opts.mascot?.(vm.program),
       kids: [],
     };
   };
