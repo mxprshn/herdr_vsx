@@ -182,13 +182,16 @@
     return [h(`div.card.agent${a.active ? '.active' : ''}${tone(word)}`, {}, row, kidsToggle, kids.length ? h('div.kids-list', {}, kids) : null)];
   }
 
-  function groupHeader(id, label, count, word, extra) {
+  function groupHeader(id, label, count, word, extra, space) {
     const open = !folded.has(id);
     return h(`div.group${open ? '' : '.closed'}`, { role: 'button', onclick: () => foldToggle(id) },
       codicon(open ? 'chevron-down' : 'chevron-right', 'chev'),
+      space ? (space.avatar ? h('img.space-avatar', { src: space.avatar, alt: '' }) : h('span.space-avatar.letter', {}, (space.name[0] ?? '?').toUpperCase())) : null,
       h(`span.group-label${word ? '.' + word : ''}`, {}, label),
       h('span.count', {}, String(count)),
       h('span.spacer'),
+      space ? h('span.hover-only', {},
+        action('add', 'New agent or terminal here', (e) => { e.stopPropagation(); openLaunch(e.currentTarget, (agent) => send({ type: 'newTab', space: space.id, agent })); })) : null,
       extra ?? null,
     );
   }
@@ -229,14 +232,25 @@
     }
     for (const g of groups) {
       const top = g.members.reduce((m, a) => ((RANK[a.shown ?? a.word] ?? 0) > (RANK[m] ?? 0) ? a.shown ?? a.word : m), null);
-      out.push(groupHeader(`ag:${g.id}`, g.label, g.members.length, g.word, folded.has(`ag:${g.id}`) && !byPriority ? status(top, true) : null));
-      if (!folded.has(`ag:${g.id}`)) for (const a of g.members) out.push(...agentRow(a, byPriority || a.pinned));
+      const space = model.spaces.find((sp) => sp.id === g.id.slice(3));
+      out.push(groupHeader(`ag:${g.id}`, g.label, g.members.length, g.word, folded.has(`ag:${g.id}`) && !byPriority ? status(top, true) : null, space));
+      if (!folded.has(`ag:${g.id}`)) {
+        for (const a of g.members) out.push(...agentRow(a, byPriority || a.pinned));
+        if (space) {
+          const shownTabs = space.tabs.filter((t) => !t.lead || !t.lead.word);
+          if (!filter || shownTabs.some((t) => matches(t.name, t.detail)) || g.members.length) out.push(...shownTabs.flatMap((t) => tabRow(space, t)));
+        }
+      }
     }
     if (!list.length) out.push(h('div.empty.dim', {}, 'Nothing matches.'));
-    const resources = model.spaces.flatMap(spaceBlock);
+    for (const sp of model.spaces) {
+      if (byKey.has(`sp-${sp.id}`)) continue;
+      const tabs = sp.tabs.filter((t) => !t.lead || !t.lead.word).filter((t) => matches(sp.name, t.name, t.detail, ...t.panes.map((p) => p.name)));
+      if (!tabs.length && !matches(sp.name)) continue;
+      out.push(groupHeader(`ag:sp-${sp.id}`, sp.name, tabs.length, undefined, folded.has(`ag:sp-${sp.id}`) ? status(sp.word, true) : null, sp));
+      if (!folded.has(`ag:sp-${sp.id}`)) out.push(...tabs.flatMap((t) => tabRow(sp, t)));
+    }
     const loose = model.unplaced.filter((t) => matches(t.name, t.title, t.cwd, t.address));
-    if (resources.length) out.push(h('div.resources-label', {}, 'Spaces'));
-    out.push(...resources);
     if (loose.length) out.push(groupHeader('loose', 'Not in a space', loose.length, null), ...(!folded.has('loose') ? loose.map((t) => h(`div.row.tab${t.active ? '.active' : ''}`, { role: 'button', onclick: () => send({ type: 'open', address: t.address }), title: [t.cwd, t.address].join('\\n') }, icon(t.icon, t.name), h('span.label', {}, h('span.name', {}, t.title || t.name), h('span.detail', {}, ` · ${t.address}`)), status(t.word, true))) : []));
     out.push(h('button.new-space', { onclick: () => send({ type: 'newSpace' }) }, codicon('new-folder'), ' New space…'));
     return out;

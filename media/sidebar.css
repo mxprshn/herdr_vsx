@@ -122,6 +122,7 @@ body {
 /* Between cards, group headers are plain labels, not bands. */
 .list > .group { background: var(--bg); border-top: none; margin: 10px -8px 0; padding-left: 10px; }
 .list > .group:first-child { margin-top: 2px; }
+.group .space-avatar { width: 15px; height: 15px; }
 .group .count, .space .count { font-weight: 400; color: var(--dim); }
 .group-label.blocked { color: var(--blocked); }
 .group-label.done { color: var(--done); }
@@ -147,7 +148,6 @@ body {
 .space-tabs .row.pane::before { content: ''; position: absolute; left: 29px; top: 0; bottom: 0; border-left: 1px solid var(--guide); }
 
 /* Resources live below chats in the merged Agents view. */
-.resources-label { margin: 14px 0 3px; padding: 0 8px; color: var(--dim); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; }
 .old-agent {
   display: flex; align-items: center; gap: 7px; height: 24px; margin: 0 -8px; padding: 0 12px;
   color: var(--dim); cursor: pointer; border-bottom: 1px solid var(--section-border);
@@ -316,7 +316,6 @@ body {
 /* Spaces: an Explorer-like tree. The space is a folder row; its tabs sit one level in. */
 .tree-node { position: relative; }
 .tree-node + .tree-node { margin-top: 2px; }
-.resources-label + .tree-node { margin-top: 0; }
 .tree-space {
   display: flex; align-items: center; gap: 6px; min-width: 0;
   height: 26px; margin: 0 -8px; padding: 0 8px 0 4px;
@@ -341,8 +340,8 @@ body {
 .tree-children { position: relative; padding: 2px 0 4px; }
 .tree-children::before { content: ''; position: absolute; left: 25px; top: 0; bottom: 4px; border-left: 1px solid var(--guide); }
 .tree-node:hover > .tree-children::before { border-left-color: var(--vscode-tree-indentGuidesStroke, var(--guide)); }
-.tree-children .row.tab { margin: 0 -8px; padding-left: 44px; }
-.tree-children .row.pane { margin: 0 -8px; padding-left: 64px; }
+.tree-children .row.tab { margin: 0 -8px; padding-left: 26px; }
+.tree-children .row.pane { margin: 0 -8px; padding-left: 44px; }
 .tree-children .row.pane::before { content: ''; position: absolute; left: 52px; top: 0; bottom: 0; border-left: 1px solid var(--guide); }
 .tree-children .row[class*=tone-]::after { left: 0; }
 .chips { display: inline-flex; gap: 4px; flex: none; }
