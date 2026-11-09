@@ -1,0 +1,448 @@
+/*
+ * Follows VS Code's own trees: 22px rows, square list highlights, section-header bands,
+ * indent guides, theme status colors. State shows as a left accent bar, not a filled box,
+ * so busy lists don't melt into one colored block.
+ */
+:root {
+  --row: 22px;
+  --working: var(--vscode-progressBar-background, var(--vscode-charts-blue, #3794ff));
+  --blocked: var(--vscode-charts-red, var(--vscode-editorError-foreground, #f14c4c));
+  --done: var(--vscode-testing-iconPassed, var(--vscode-charts-green, #89d185));
+  --wait: var(--vscode-charts-blue, var(--vscode-terminal-ansiBlue, #3794ff));
+  --dim: var(--vscode-descriptionForeground);
+  --hover: var(--vscode-list-hoverBackground);
+  --active: var(--vscode-list-inactiveSelectionBackground);
+  --active-fg: var(--vscode-list-inactiveSelectionForeground, var(--vscode-foreground));
+  --guide: var(--vscode-tree-inactiveIndentGuidesStroke, var(--vscode-tree-indentGuidesStroke, rgba(128, 128, 128, 0.35)));
+  --section: var(--vscode-sideBarSectionHeader-background, transparent);
+  --section-fg: var(--vscode-sideBarSectionHeader-foreground, var(--vscode-sideBarTitle-foreground, var(--vscode-foreground)));
+  --section-border: var(--vscode-sideBarSectionHeader-border, var(--vscode-tree-tableColumnsBorder, rgba(128, 128, 128, 0.2)));
+  --bg: var(--vscode-sideBar-background, var(--vscode-editor-background));
+}
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  padding: 0;
+  color: var(--vscode-sideBar-foreground, var(--vscode-foreground));
+  background: var(--bg);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  line-height: var(--row);
+  user-select: none;
+}
+#root { padding: 0 0 12px; }
+
+/* ------------------------------------------------------------ search */
+
+.bar { position: sticky; top: 0; z-index: 3; height: 36px; box-sizing: border-box; padding: 6px 12px; background: var(--bg); }
+.search {
+  width: 100%;
+  box-sizing: border-box;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 2px;
+  color: var(--vscode-input-foreground);
+  background: var(--vscode-input-background);
+  font: inherit;
+  outline: none;
+}
+.search::placeholder { color: var(--vscode-input-placeholderForeground); }
+.search:focus { border-color: var(--vscode-focusBorder); }
+.bar { display: flex; gap: 4px; align-items: center; }
+.bar-add {
+  flex: none; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center;
+  border: none; border-radius: 2px; cursor: pointer;
+  color: var(--vscode-button-foreground); background: var(--vscode-button-background);
+}
+.bar-add:hover { background: var(--vscode-button-hoverBackground); }
+.bar-add .codicon { font-size: 16px; }
+
+/* The + menu: a popover like VS Code's own context menus. */
+.launch {
+  position: fixed; z-index: 10; min-width: 190px; max-height: 70vh; overflow-y: auto; padding: 4px; box-sizing: border-box;
+  border: 1px solid var(--vscode-menu-border, var(--vscode-widget-border, var(--section-border))); border-radius: 6px;
+  background: var(--vscode-menu-background, var(--vscode-editorWidget-background, var(--bg)));
+  color: var(--vscode-menu-foreground, var(--vscode-foreground));
+  box-shadow: 0 4px 16px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.25)); outline: none;
+}
+.launch-item {
+  display: flex; align-items: center; gap: 8px; width: 100%; height: 26px; padding: 0 8px; box-sizing: border-box;
+  border: none; border-radius: 4px; background: transparent; color: inherit; cursor: pointer; text-align: left;
+}
+.launch-item:hover, .launch-item:focus-visible { background: var(--vscode-menu-selectionBackground, var(--vscode-list-activeSelectionBackground)); color: var(--vscode-menu-selectionForeground, var(--vscode-list-activeSelectionForeground)); outline: none; }
+.launch-item .label { flex: 1; }
+.launch-hint { font-size: 0.8em; color: var(--dim); }
+.launch-item kbd {
+  font: inherit; font-size: 0.8em; min-width: 16px; text-align: center; padding: 0 3px; border-radius: 3px;
+  color: var(--dim); background: color-mix(in srgb, var(--vscode-foreground) 8%, transparent);
+}
+
+/* ------------------------------------------------------------ rows */
+
+.row, .group, .space {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 8px 0 12px;
+  cursor: pointer;
+  position: relative;
+}
+.row { height: var(--row); }
+.row:hover, .space:hover { background: var(--hover); }
+.row.active { background: var(--active); color: var(--active-fg); }
+.row:focus-visible, .space:focus-visible { outline: 1px solid var(--vscode-list-focusOutline, var(--vscode-focusBorder)); outline-offset: -1px; }
+.row.quiet .name { color: var(--dim); }
+
+.label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.detail { color: var(--dim); }
+.spacer { flex: 1; }
+.machine { font-size: 0.85em; color: var(--dim); }
+.time { font-size: 0.85em; color: var(--dim); flex: none; font-variant-numeric: tabular-nums; }
+.chev { font-size: 16px !important; color: var(--vscode-icon-foreground, var(--dim)); flex: none; margin-left: -4px; }
+
+/* ------------------------------------------------------------ section headers */
+
+/* Agents' groups (Needs you / a space) and spaces: bands like the sidebar's own sections,
+ * sticky under the search so you always see whose rows you're in. */
+.group, .space {
+  position: sticky;
+  top: 36px;
+  z-index: 2;
+  height: var(--row);
+  background: var(--bg);
+  background-image: linear-gradient(var(--section), var(--section));
+  color: var(--section-fg);
+  border-top: 1px solid var(--section-border);
+  padding-left: 6px;
+}
+.group { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; }
+/* Between cards, group headers are plain labels, not bands. */
+.list > .group { background: var(--bg); border-top: none; margin: 10px -8px 0; padding-left: 10px; }
+.list > .group:first-child { margin-top: 2px; }
+.group .count, .space .count { font-weight: 400; color: var(--dim); }
+.group-label.blocked { color: var(--blocked); }
+.group-label.done { color: var(--done); }
+.group-label.working { color: var(--wait); }
+.list > .group:first-child, .list > .space-block:first-child > .space { border-top-color: transparent; }
+
+.space { font-weight: 600; }
+.space .detail { font-weight: 400; font-size: 0.9em; }
+.space .icon { width: 16px; height: 16px; }
+.space.current { color: var(--vscode-foreground); }
+.space.current::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--vscode-focusBorder);
+}
+.here { flex: none; color: var(--vscode-focusBorder); display: inline-flex; }
+.here .codicon { font-size: 14px; }
+
+/* Tabs under their space, behind an indent guide like the Explorer's. */
+.space-tabs { position: relative; padding-bottom: 4px; }
+.space-tabs::before { content: ''; position: absolute; left: 13px; top: 0; bottom: 4px; border-left: 1px solid var(--guide); }
+.space-block:hover .space-tabs::before { border-left-color: var(--vscode-tree-indentGuidesStroke, var(--guide)); }
+.row.tab { padding-left: 22px; }
+.row.pane { padding-left: 38px; }
+.space-tabs .row.pane::before { content: ''; position: absolute; left: 29px; top: 0; bottom: 0; border-left: 1px solid var(--guide); }
+
+/* ------------------------------------------------------------ cards */
+
+/*
+ * Agents and spaces are cards: a raised surface from the theme (the editor widget color),
+ * a hairline border, a gap between them. State shows as the card's left accent.
+ */
+.list { padding: 0 8px; }
+.card {
+  position: relative;
+  margin: 6px 0;
+  border: 1px solid var(--vscode-widget-border, var(--vscode-editorWidget-border, var(--section-border)));
+  border-radius: 6px;
+  background: var(--vscode-editorWidget-background, var(--vscode-sideBarSectionHeader-background, var(--bg)));
+  overflow: hidden;
+}
+.card:hover { border-color: var(--vscode-focusBorder); }
+.card.active { border-color: var(--vscode-focusBorder); box-shadow: 0 0 0 1px var(--vscode-focusBorder) inset; }
+.card[class*=tone-]::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--tone); }
+.card[class*=tone-] { background: color-mix(in srgb, var(--tone) var(--wash), var(--vscode-editorWidget-background, var(--bg))); }
+.card .row::after { display: none; }
+
+.agent-head, .space-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px 8px 12px; cursor: pointer; min-width: 0;
+}
+.agent-head:focus-visible, .space-head:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
+.lines { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.line1, .line2 { display: flex; align-items: center; gap: 6px; min-width: 0; line-height: 18px; }
+.line1 .title { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+.line2 { font-size: 0.88em; color: var(--dim); }
+.line2 .meta { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.line2 .time, .line2 .counts { flex: none; font-size: 1em; }
+.agent-head.quiet .title { font-weight: 500; color: var(--dim); }
+.state { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+.word { font-size: 0.85em; font-weight: 600; }
+.word.working { color: var(--wait); }
+.word.done { color: var(--done); }
+.pin-mark { color: var(--dim); display: inline-flex; flex: none; }
+.pin-mark .codicon { font-size: 12px; }
+.agent-head:hover .hover-only, .space-head:hover .hover-only { display: inline-flex; }
+.agent-head:hover .hover-hide, .space-head:hover .hover-hide { display: none; }
+
+/* The program's icon on a tile, the size of the two lines. */
+.tile {
+  width: 32px; height: 32px; flex: none; border-radius: 7px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--vscode-foreground) 7%, transparent);
+}
+.tile .icon, .tile .icon.big { width: 20px; height: 20px; }
+
+/*
+ * Agents read like a messenger's chat list: full-width rows, no boxes, a divider that
+ * starts after the avatar, the selected chat filled; state where an unread badge goes.
+ */
+.card.agent {
+  margin: 0 -8px; border: none; border-radius: 0; background: transparent; overflow: visible;
+}
+.card.agent:hover { background: var(--hover); }
+.card.agent.active { background: var(--active); box-shadow: none; }
+.card.agent .agent-head { padding: 8px 12px; gap: 12px; }
+.card.agent + .card.agent::before {
+  content: ''; position: absolute; top: 0; left: 56px; right: 0; border-top: 1px solid var(--section-border);
+}
+.card.agent:hover::before, .card.agent:hover + .card.agent::before,
+.card.agent.active::before, .card.agent.active + .card.agent::before { border-top-color: transparent; }
+/* A chat in a state has its own background: needs you strongest, then working, then done. */
+.card.agent.tone-blocked { --chat: 20%; }
+/* Working is the normal state, not news: a calm lavender-blue wash and a softened bar. */
+.card.agent.tone-working { --tone: color-mix(in srgb, var(--wait) 65%, #8e7cc3); --chat: 9%; }
+.card.agent.tone-working::after { background: color-mix(in srgb, var(--tone) 55%, var(--bg)); }
+.card.agent.tone-working + .card.agent.tone-working::before { border-top-color: color-mix(in srgb, var(--tone) 18%, transparent); }
+.card.agent.tone-done { --chat: 13%; }
+.card.agent[class*=tone-] { background: color-mix(in srgb, var(--tone) var(--chat), var(--bg)); }
+.card.agent[class*=tone-]:hover { background: color-mix(in srgb, var(--tone) calc(var(--chat) + 7%), var(--bg)); }
+.card.agent.active[class*=tone-] { background: color-mix(in srgb, var(--tone) var(--chat), var(--active)); }
+.card.agent[class*=tone-]::after { display: block; width: 3px; }
+.card.agent[class*=tone-]::before, .card.agent[class*=tone-] + .card.agent::before { border-top-color: transparent; }
+.card.agent[class*=tone-] .ava-badge { background: color-mix(in srgb, var(--tone) var(--chat), var(--bg)); border-color: transparent; }
+/* Consecutive chats in the same state: a hairline between them so they don't merge. */
+.card.agent[class*=tone-] + .card.agent[class*=tone-]::before { border-top-color: color-mix(in srgb, var(--tone) 35%, transparent); }
+.card.agent .ava, .card.agent .ava-img { width: 40px; height: 40px; }
+.card.agent .ava-img { border-radius: 50%; }
+.card.agent .ava-img.letter { font-size: 17px; }
+.card.agent .ava-badge { right: -3px; bottom: -3px; border-radius: 50%; background: var(--bg); border-color: var(--bg); }
+.card.agent.active .ava-badge { background: var(--active); border-color: transparent; }
+.card.agent .line1, .card.agent .line2 { line-height: 20px; }
+.card.agent .line1 .title { flex: 1; }
+.card.agent .line1 .spacer { display: none; }
+.card.agent .line1 .time { color: var(--dim); font-size: 0.85em; }
+.card.agent.tone-blocked .line1 .time, .card.agent.tone-done .line1 .time { color: var(--tone); font-weight: 600; }
+.card.agent .line2 { font-size: 0.92em; }
+.unread {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 10px;
+  font-size: 11px; font-weight: 700; line-height: 1;
+}
+.unread .codicon { font-size: 12px; }
+.unread.blocked { color: var(--vscode-badge-foreground); background: var(--blocked); animation: pulse 0.7s ease-in-out infinite alternate; }
+.unread.done { color: var(--vscode-badge-foreground); background: var(--done); padding: 0; }
+.unread.working { color: var(--wait); padding: 0; }
+.card.agent .kids-bar { padding-left: 64px; border-top: none; }
+.card.agent .kids-list .row.sub { padding-left: 64px; }
+.card.agent .kids-list { padding-bottom: 6px; }
+/* Group labels sit flush with the rows. */
+.list > .group + .card.agent::before { display: none; }
+
+/* An agent's avatar: its repo, with the agent's own icon as a badge in the corner. */
+.ava { position: relative; width: 32px; height: 32px; flex: none; }
+.ava-img { width: 32px; height: 32px; border-radius: 7px; object-fit: cover; display: block; }
+.ava-img.letter {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700; line-height: 1;
+  color: var(--vscode-badge-foreground); background: var(--vscode-badge-background);
+}
+.ava-badge {
+  position: absolute; right: -4px; bottom: -4px; width: 18px; height: 18px; box-sizing: border-box;
+  display: inline-flex; align-items: center; justify-content: center; border-radius: 6px;
+  background: var(--vscode-editorWidget-background, var(--bg));
+  border: 1.5px solid var(--vscode-editorWidget-background, var(--bg));
+  box-shadow: 0 0 0 1px var(--vscode-widget-border, var(--section-border));
+}
+.ava-badge .icon, .ava-badge .icon.big { width: 13px; height: 13px; font-size: 8px; border-radius: 3px; }
+.card[class*=tone-] .ava-badge { background: color-mix(in srgb, var(--tone) var(--wash), var(--vscode-editorWidget-background, var(--bg))); border-color: transparent; }
+
+/* Sub-agents: a toggle bar and their rows, inside the card. */
+.kids-bar {
+  display: flex; align-items: center; gap: 4px; width: 100%;
+  padding: 0 12px 0 52px; height: 20px; border: none; border-top: 1px solid var(--section-border);
+  background: transparent; color: var(--dim); font-size: 0.85em; cursor: pointer; text-align: left;
+}
+.kids-bar:hover { color: var(--vscode-foreground); background: var(--hover); }
+.kids-bar .codicon { font-size: 14px; }
+.kids-list { padding-bottom: 4px; }
+.kids-list .row.sub { padding-left: 52px; }
+.row.sub-working .name { color: var(--vscode-foreground); }
+.row.sub-blocked { background: color-mix(in srgb, var(--blocked) 12%, transparent); }
+.row.sub-blocked .name { color: var(--vscode-foreground); font-weight: 600; }
+
+/* Spaces: an Explorer-like tree. The space is a folder row; its tabs sit one level in. */
+.tree-node { position: relative; }
+.tree-node + .tree-node { margin-top: 2px; }
+.tree-space {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+  height: 26px; margin: 0 -8px; padding: 0 8px 0 4px;
+  cursor: pointer; position: sticky; top: 36px; z-index: 2;
+  background: var(--bg);
+  background-image: linear-gradient(var(--section), var(--section));
+  font-weight: 600;
+}
+.tree-space:hover { background-image: linear-gradient(var(--hover), var(--hover)); }
+.tree-space:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
+.tree-space .detail { font-weight: 400; font-size: 0.88em; }
+.tree-space.current::before { content: ''; position: absolute; left: 0; top: 3px; bottom: 3px; width: 2px; border-radius: 1px; background: var(--vscode-focusBorder); }
+.tree-space:hover .hover-only { display: inline-flex; }
+.tree-space:hover .hover-hide { display: none; }
+.twisty { font-size: 16px !important; color: var(--vscode-icon-foreground, var(--dim)); flex: none; }
+.space-avatar { width: 18px; height: 18px; flex: none; border-radius: 4px; object-fit: cover; }
+.space-avatar.letter {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; line-height: 1;
+  color: var(--vscode-badge-foreground); background: var(--vscode-badge-background);
+}
+.tree-children { position: relative; padding: 2px 0 4px; }
+.tree-children::before { content: ''; position: absolute; left: 25px; top: 0; bottom: 4px; border-left: 1px solid var(--guide); }
+.tree-node:hover > .tree-children::before { border-left-color: var(--vscode-tree-indentGuidesStroke, var(--guide)); }
+.tree-children .row.tab { margin: 0 -8px; padding-left: 44px; }
+.tree-children .row.pane { margin: 0 -8px; padding-left: 64px; }
+.tree-children .row.pane::before { content: ''; position: absolute; left: 52px; top: 0; bottom: 0; border-left: 1px solid var(--guide); }
+.tree-children .row[class*=tone-]::after { left: 0; }
+.chips { display: inline-flex; gap: 4px; flex: none; }
+.chip {
+  display: inline-flex; align-items: center; gap: 3px; height: 18px; padding: 0 6px; border-radius: 9px;
+  font-size: 11px; font-weight: 600; line-height: 1;
+  background: color-mix(in srgb, var(--chip) 18%, transparent); color: var(--chip);
+}
+.chip .codicon { font-size: 11px; }
+.chip.blocked { --chip: var(--blocked); animation: pulse 0.7s ease-in-out infinite alternate; }
+.chip.done { --chip: var(--done); }
+.chip.working { --chip: var(--wait); }
+
+/* ------------------------------------------------------------ icons */
+
+.icon { width: 16px; height: 16px; flex: none; border-radius: 3px; object-fit: contain; }
+.icon.big { width: 16px; height: 16px; }
+.icon.glyph { background: currentColor; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; }
+.icon.avatar { border-radius: 4px; }
+.icon.file { display: inline-flex; align-items: center; justify-content: center; color: var(--vscode-icon-foreground, var(--dim)); }
+.icon.file .codicon { font-size: 16px; }
+.icon.letter {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; line-height: 1;
+  color: var(--vscode-badge-foreground); background: var(--vscode-badge-background);
+  border-radius: 4px;
+}
+
+/* ------------------------------------------------------------ status */
+
+.st { flex: none; display: inline-flex; align-items: center; justify-content: center; }
+.st.working { color: var(--wait); width: 16px; }
+.st.working .codicon { font-size: 14px; }
+.st.dot { width: 8px; height: 8px; margin: 0 4px; border-radius: 50%; box-sizing: border-box; }
+.st.dot.done { background: var(--done); }
+.st.dot.idle { border: 1.5px solid var(--dim); opacity: 0.6; }
+/* Needing you breathes, so it reads from across the screen. */
+@keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
+.st.blocked-pill {
+  padding: 0 6px; height: 16px; line-height: 16px; border-radius: 8px; font-size: 10px; font-weight: 700;
+  color: var(--vscode-badge-foreground); background: var(--blocked);
+  animation: pulse 0.7s ease-in-out infinite alternate;
+}
+.st.blocked-mark {
+  width: 16px; height: 16px; line-height: 16px; border-radius: 8px; font-size: 10px; font-weight: 700;
+  color: var(--vscode-badge-foreground); background: var(--blocked);
+  animation: pulse 0.7s ease-in-out infinite alternate;
+}
+
+/* A row's state: an accent bar on the left and a faint wash; bold name. Blocked strongest. */
+.tone-blocked, .tone-working, .tone-done { --tone: transparent; }
+.tone-blocked { --tone: var(--blocked); --wash: 14%; }
+.tone-working { --tone: var(--wait); --wash: 8%; }
+.tone-done { --tone: var(--done); --wash: 6%; }
+.row[class*=tone-] { background: color-mix(in srgb, var(--tone) var(--wash), transparent); }
+.row[class*=tone-]:hover { background: color-mix(in srgb, var(--tone) calc(var(--wash) + 8%), transparent); }
+.row.active[class*=tone-] { background: color-mix(in srgb, var(--tone) var(--wash), var(--active)); }
+.row[class*=tone-]::after, .frame[class*=tone-]::after {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--tone);
+}
+.row.tone-blocked .name, .row.tone-working .name, .row.tone-done .name, .frame > .agent .name { font-weight: 600; color: var(--vscode-foreground); }
+button.kids.tone-blocked, button.kids.tone-working, button.kids.tone-done { background: transparent; }
+button.kids.tone-blocked { color: var(--blocked); }
+button.kids.tone-working { color: var(--wait); }
+button.kids.tone-done { color: var(--done); }
+/* An agent and its busy sub-agents share one bar. */
+.frame { position: relative; }
+.frame[class*=tone-] { background: color-mix(in srgb, var(--tone) var(--wash), transparent); }
+.frame > .row::after { display: none; }
+.frame > .row[class*=tone-] { background: transparent; }
+
+/* ------------------------------------------------------------ sub-agents */
+
+.row.sub { padding-left: 20px; gap: 0; }
+.row.sub > .icon { margin-right: 6px; width: 14px; height: 14px; }
+.row.sub .name { color: var(--dim); }
+.row.sub[class*=tone-] .name { color: var(--vscode-foreground); }
+.row.sub .name.short { max-width: 45%; display: inline-block; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+.row.sub .label { margin-right: 6px; }
+.line { width: 10px; height: 100%; margin-right: 2px; flex: none; position: relative; }
+.line.through::before, .line.mid::before, .line.last::before {
+  content: ''; position: absolute; left: 3px; top: 0; bottom: 0; border-left: 1px solid var(--guide);
+}
+.line.mid::after, .line.last::after {
+  content: ''; position: absolute; left: 3px; top: 50%; width: 6px; border-bottom: 1px solid var(--guide);
+}
+.line.last::before { bottom: 50%; }
+.kind {
+  padding: 0 4px; margin-right: 5px; border-radius: 3px; font-size: 0.8em; line-height: 16px; display: inline-block;
+  color: var(--vscode-badge-foreground); background: var(--vscode-badge-background); opacity: 0.85;
+}
+
+/* ------------------------------------------------------------ buttons */
+
+.badge {
+  min-width: 18px; height: 18px; line-height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 9px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 400;
+  color: var(--vscode-badge-foreground); background: var(--vscode-badge-background);
+}
+
+.hover-only { display: none; gap: 2px; flex: none; }
+.row:hover .hover-only, .space:hover .hover-only { display: inline-flex; }
+.row:hover .hover-hide, .space:hover .hover-hide { display: none; }
+
+button { font: inherit; }
+.act, .kids {
+  display: inline-flex; align-items: center; gap: 2px;
+  height: 20px; min-width: 20px; padding: 0 2px; justify-content: center;
+  border: none; border-radius: 5px; background: transparent; color: var(--vscode-icon-foreground, var(--dim)); cursor: pointer;
+}
+.kids { font-size: 0.85em; flex: none; color: var(--dim); }
+.act:hover, .kids:hover { color: var(--vscode-foreground); background: var(--vscode-toolbar-hoverBackground); }
+.act .codicon, .kids .codicon { font-size: 16px; }
+
+.new-space {
+  display: flex; align-items: center; gap: 6px; width: calc(100% - 24px); margin: 10px 12px 0; height: 26px; padding: 0 8px;
+  border: none; border-radius: 2px;
+  color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+  background: var(--vscode-button-secondaryBackground, var(--hover));
+  cursor: pointer; justify-content: center;
+}
+.new-space:hover { background: var(--vscode-button-secondaryHoverBackground, var(--hover)); }
+
+.empty { padding: 12px 14px; color: var(--vscode-foreground); line-height: 1.4; }
+.empty p { margin: 0 0 8px; }
+.dim { color: var(--dim); }
+.primary {
+  display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px;
+  border: none; border-radius: 2px; cursor: pointer;
+  color: var(--vscode-button-foreground); background: var(--vscode-button-background);
+}
+.primary:hover { background: var(--vscode-button-hoverBackground); }

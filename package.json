@@ -1,0 +1,384 @@
+{
+  "name": "herdr-vsx",
+  "displayName": "Herdr for VS Code",
+  "description": "Your herdr spaces and coding agents in the VS Code sidebar: see who needs you, jump in, start new ones.",
+  "version": "0.7.0",
+  "publisher": "mxprshn",
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mxprshn/herdr_vsx"
+  },
+  "bugs": {
+    "url": "https://github.com/mxprshn/herdr_vsx/issues"
+  },
+  "homepage": "https://github.com/mxprshn/herdr_vsx#readme",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "keywords": [
+    "herdr",
+    "agents",
+    "ai",
+    "claude",
+    "codex",
+    "terminal",
+    "tmux"
+  ],
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other",
+    "AI"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "configuration": {
+      "title": "Herdr",
+      "properties": {
+        "herdr.hcPath": {
+          "type": "string",
+          "default": "hc",
+          "description": "Path to the herdr-core `hc` binary. The default also looks in ~/.local/bin, /opt/homebrew/bin and /usr/local/bin."
+        },
+        "herdr.openIn": {
+          "type": "string",
+          "enum": [
+            "editor",
+            "panel"
+          ],
+          "default": "editor",
+          "description": "Where terminals open: as editor tabs or in the terminal panel."
+        },
+        "herdr.notifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a notification when an agent needs you or finishes while you look elsewhere."
+        },
+        "herdr.explorerFollowsSpace": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the folder of the space whose terminal you switch to as an extra root in the Explorer (the window's own folder stays first)."
+        },
+        "herdr.filesFollowEditors": {
+          "type": "boolean",
+          "default": true,
+          "description": "A file you open in VS Code becomes a tab of the space whose project holds it; closing its last editor tab removes it. Needs a herdr-app editor mod named `my-editor` (in ~/.config/herdr-app/mods) to show those tabs; without one this does nothing."
+        },
+        "herdr.systemNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "macOS: also post a system banner when VS Code isn't the active window (terminal-notifier if installed, else AppleScript)."
+        },
+        "herdr.sounds": {
+          "type": "boolean",
+          "default": true,
+          "description": "Play Herdr's sounds when an agent needs you or finishes."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "herdr",
+          "title": "herdr",
+          "icon": "media/herdr.svg"
+        }
+      ]
+    },
+    "views": {
+      "herdr": [
+        {
+          "id": "herdr.agents",
+          "name": "Agents",
+          "type": "webview"
+        },
+        {
+          "id": "herdr.spaces",
+          "name": "Spaces",
+          "type": "webview"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "herdr.open",
+        "title": "Open",
+        "category": "Herdr"
+      },
+      {
+        "command": "herdr.newSpace",
+        "title": "New Space",
+        "category": "Herdr",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "herdr.newTab",
+        "title": "New Tab",
+        "category": "Herdr",
+        "icon": "$(add)"
+      },
+      {
+        "command": "herdr.renameSpace",
+        "title": "Rename Space",
+        "category": "Herdr"
+      },
+      {
+        "command": "herdr.renameTab",
+        "title": "Rename Tab",
+        "category": "Herdr"
+      },
+      {
+        "command": "herdr.closeTab",
+        "title": "Close Tab",
+        "category": "Herdr"
+      },
+      {
+        "command": "herdr.closeSpace",
+        "title": "Close Space",
+        "category": "Herdr"
+      },
+      {
+        "command": "herdr.gitFetch",
+        "title": "Git Fetch",
+        "category": "Herdr"
+      },
+      {
+        "command": "herdr.gitPull",
+        "title": "Git Pull",
+        "category": "Herdr"
+      },
+      {
+        "command": "herdr.newNote",
+        "title": "New Markdown File…",
+        "category": "Herdr"
+      },
+      {
+        "command": "herdr.pin",
+        "title": "Pin to Top",
+        "category": "Herdr"
+      },
+      {
+        "command": "herdr.unpin",
+        "title": "Unpin",
+        "category": "Herdr"
+      },
+      {
+        "command": "herdr.kill",
+        "title": "End Terminal",
+        "category": "Herdr"
+      },
+      {
+        "command": "herdr.reconnect",
+        "title": "Reconnect to Core",
+        "category": "Herdr",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "herdr.sortSpace",
+        "title": "Group by Space",
+        "category": "Herdr",
+        "icon": "$(list-tree)"
+      },
+      {
+        "command": "herdr.sortPriority",
+        "title": "Sort by Priority",
+        "category": "Herdr",
+        "icon": "$(list-ordered)"
+      },
+      {
+        "command": "herdr.goToAgent",
+        "title": "Go to Agent…",
+        "category": "Herdr",
+        "icon": "$(search)"
+      },
+      {
+        "command": "herdr.nextAttention",
+        "title": "Go to Next Agent That Needs Me",
+        "category": "Herdr"
+      },
+      {
+        "command": "herdr.focusAgents",
+        "title": "Show Agents",
+        "category": "Herdr"
+      },
+      {
+        "command": "herdr.paste",
+        "title": "Paste (Text or Image)",
+        "category": "Herdr"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "herdr.goToAgent",
+        "key": "ctrl+alt+a",
+        "mac": "cmd+alt+a"
+      },
+      {
+        "command": "herdr.nextAttention",
+        "key": "ctrl+alt+n",
+        "mac": "cmd+alt+n"
+      },
+      {
+        "command": "herdr.paste",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+v",
+        "when": "terminalFocus && herdr.terminalFocused"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "herdr.goToAgent",
+          "when": "view == herdr.agents",
+          "group": "navigation@1"
+        },
+        {
+          "command": "herdr.sortSpace",
+          "when": "view == herdr.agents && herdr.sort != space",
+          "group": "navigation@2"
+        },
+        {
+          "command": "herdr.sortPriority",
+          "when": "view == herdr.agents && herdr.sort == space",
+          "group": "navigation@2"
+        },
+        {
+          "command": "herdr.newSpace",
+          "when": "view == herdr.spaces",
+          "group": "navigation@1"
+        },
+        {
+          "command": "herdr.reconnect",
+          "when": "view == herdr.spaces",
+          "group": "navigation@2"
+        }
+      ],
+      "webview/context": [
+        {
+          "command": "herdr.open",
+          "when": "webviewSection == agent || webviewSection == pane",
+          "group": "1_open@1"
+        },
+        {
+          "command": "herdr.pin",
+          "when": "webviewSection == agent && !pinned",
+          "group": "2_agent@1"
+        },
+        {
+          "command": "herdr.unpin",
+          "when": "webviewSection == agent && pinned",
+          "group": "2_agent@1"
+        },
+        {
+          "command": "herdr.newTab",
+          "when": "webviewSection == space || webviewSection == tab",
+          "group": "1_open@2"
+        },
+        {
+          "command": "herdr.newNote",
+          "when": "webviewSection == space",
+          "group": "1_open@3"
+        },
+        {
+          "command": "herdr.gitFetch",
+          "when": "webviewSection == space && git",
+          "group": "2_git@1"
+        },
+        {
+          "command": "herdr.gitPull",
+          "when": "webviewSection == space && git",
+          "group": "2_git@2"
+        },
+        {
+          "command": "herdr.renameTab",
+          "when": "webviewSection == tab",
+          "group": "3_edit@1"
+        },
+        {
+          "command": "herdr.renameSpace",
+          "when": "webviewSection == space",
+          "group": "3_edit@1"
+        },
+        {
+          "command": "herdr.closeTab",
+          "when": "webviewSection == tab",
+          "group": "4_close@1"
+        },
+        {
+          "command": "herdr.closeSpace",
+          "when": "webviewSection == space",
+          "group": "4_close@2"
+        },
+        {
+          "command": "herdr.kill",
+          "when": "webviewSection == agent || webviewSection == pane",
+          "group": "4_close@3"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "herdr.open",
+          "when": "false"
+        },
+        {
+          "command": "herdr.renameSpace",
+          "when": "false"
+        },
+        {
+          "command": "herdr.renameTab",
+          "when": "false"
+        },
+        {
+          "command": "herdr.closeTab",
+          "when": "false"
+        },
+        {
+          "command": "herdr.closeSpace",
+          "when": "false"
+        },
+        {
+          "command": "herdr.gitFetch",
+          "when": "false"
+        },
+        {
+          "command": "herdr.gitPull",
+          "when": "false"
+        },
+        {
+          "command": "herdr.newNote",
+          "when": "false"
+        },
+        {
+          "command": "herdr.pin",
+          "when": "false"
+        },
+        {
+          "command": "herdr.unpin",
+          "when": "false"
+        },
+        {
+          "command": "herdr.kill",
+          "when": "false"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -w -p .",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@vscode/codicons": "^0.0.36",
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.4.0"
+  }
+}
