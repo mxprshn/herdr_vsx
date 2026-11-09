@@ -2,7 +2,7 @@
   "name": "herdr-vsx",
   "displayName": "Herdr for VS Code",
   "description": "Your herdr spaces and coding agents in the VS Code sidebar: see who needs you, jump in, start new ones.",
-  "version": "0.12.2",
+  "version": "0.12.3",
   "publisher": "mxprshn",
   "license": "MIT",
   "icon": "media/icon.png",
